@@ -953,3 +953,20 @@ def test_visible_calibration_is_short_but_physically_actuated() -> None:
     assert "controller.apply_action" in source
     assert "render_step = step % 4 == 0" in source
     assert "world.step(render=render_step)" in source
+
+
+def test_a_dropped_object_defers_its_scope_rather_than_ending_the_episode() -> None:
+    """Losing a carried object must not forfeit the remaining stages.
+
+    The robot is undamaged and later stages locate objects by live pose, so
+    cleanup can still fetch it. seed-1 of the 2026-08-22 five-seed sample
+    stopped at 2.0 when the bowl came off during the carry to recycling.
+    """
+    source = (
+        Path(__file__).parents[1] / "airsign_task3" / "isaac_actuator.py"
+    ).read_text(encoding="utf-8")
+    retention = source.split("def _carried_objects_retained", 1)[1].split("\n    def ", 1)[0]
+    assert "self.defer_scope_reason = (" in retention
+    assert "unrecoverable_failure_reason" not in retention
+    # The head-safety watchdog remains a separate, intact mechanism.
+    assert "watchdog_interventions += 1" in source

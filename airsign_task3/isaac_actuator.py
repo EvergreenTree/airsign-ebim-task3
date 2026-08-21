@@ -1075,14 +1075,21 @@ class IsaacPhysicalActuator(PhysicalActuator):
                 }
         if not lost:
             return True
-        self.unrecoverable_failure_reason = (
+        # An object that has fallen is a lost point, not a robot hazard: the
+        # base and arms are undamaged and the later stages locate objects by
+        # live pose, so cleanup can still fetch it off the floor. Ending the
+        # episode here forfeited all of Stage 4 in seed-1 of the 2026-08-22
+        # five-seed sample, which stopped at 2.0 when the bowl came off during
+        # the carry to recycling. Defer the scope and carry on, which is the
+        # same call already made for a station the base cannot reach.
+        self.defer_scope_reason = (
             "physically carried object lost during navigation: "
             + ", ".join(sorted(lost))
         )
         self.store.event(
             "navigation_object_retention_failed",
             objects=lost,
-            failure_reason=self.unrecoverable_failure_reason,
+            defer_reason=self.defer_scope_reason,
         )
         return False
 
