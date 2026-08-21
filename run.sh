@@ -40,6 +40,8 @@ chmod 700 "${XDG_RUNTIME_DIR}"
 # Isaac process restores authored rigid-body and bean state without mutating
 # any object during an active episode. Other exits propagate unchanged.
 RESET_MARKER="${AIRSIGN_TASK3_RUN_ROOT:-${ROOT}/runs}/.reset-requested"
+MAX_CRASH_RESTARTS="${AIRSIGN_TASK3_MAX_CRASH_RESTARTS:-2}"
+crash_restarts=0
 while true; do
   set +e
   "${PYTHON}" -m airsign_task3.main "$@"
@@ -50,6 +52,19 @@ while true; do
   # full-process reset semantics without touching any episode object.
   if [[ -f "${RESET_MARKER}" ]]; then
     rm -f -- "${RESET_MARKER}"
+    continue
+  fi
+  # Isaac Sim's renderer plugin has been observed to segfault mid-episode --
+  # twice in 34 launches here, at unrelated points in the plan, and always
+  # while several Isaac instances shared one GPU. The episode dies with no
+  # summary written, which scores as nothing at all. A crash is not a policy
+  # decision, so restart the episode a bounded number of times rather than
+  # handing back a dead container. Ordinary exits, including a policy failure,
+  # propagate unchanged on the first attempt.
+  if [[ ${status} -gt 128 ]] && (( crash_restarts < MAX_CRASH_RESTARTS )); then
+    crash_restarts=$(( crash_restarts + 1 ))
+    echo "airsign: simulator died with status ${status};" \
+         "restarting episode (${crash_restarts}/${MAX_CRASH_RESTARTS})" >&2
     continue
   fi
   if [[ ${status} -ne 75 ]]; then

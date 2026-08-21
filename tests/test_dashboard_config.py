@@ -71,3 +71,17 @@ def test_validated_run_mirror_requires_complete_evidence_and_checksums() -> None
     assert "episode.jsonl summary.json evidence.mp4" in source
     assert "/mnt/oss/evergreen/ebim-task3" in source
     assert "sha256sum episode.jsonl summary.json evidence.mp4" in source
+
+
+def test_launcher_restarts_a_crashed_simulator() -> None:
+    """A simulator segfault must not hand back a dead container.
+
+    Isaac's renderer plugin segfaulted twice in 34 launches during development,
+    at unrelated points in the plan. The episode dies with no summary, which
+    scores as nothing.
+    """
+    source = (Path(__file__).parents[1] / "run.sh").read_text(encoding="utf-8")
+    assert 'MAX_CRASH_RESTARTS="${AIRSIGN_TASK3_MAX_CRASH_RESTARTS:-2}"' in source
+    assert "if [[ ${status} -gt 128 ]] && (( crash_restarts < MAX_CRASH_RESTARTS )); then" in source
+    # An ordinary non-zero exit still propagates.
+    assert "if [[ ${status} -ne 75 ]]; then" in source
