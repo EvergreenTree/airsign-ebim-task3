@@ -1,5 +1,8 @@
 # AirSign EBiM Task 3 policy
 
+**Team AirSign** — Changqing Fu, Shangyu Yao, Sichen Su, Ziqi Ma, Changda Tian.
+
+
 This repository contains AirSign's physically actuated policy for EBiM Task 3
 (Assisted Living and Feeding), targeting Isaac Sim 5.1.0. The policy may read
 simulator ground-truth poses and states, as allowed for Phase I. It never moves
@@ -14,11 +17,25 @@ and safety stops.
 The runtime is pinned to EBiM benchmark commit
 `e36119cc43e949dc6269bfe5c1e7f613f9f24d0c`.
 
-The minimal pinned benchmark runtime and the two large USD files required by
-the policy are vendored under `vendor/benchmark/`. The image verifies the
-benchmark revision marker and both USD SHA-256 hashes during the build. No
-model, dataset, package install, Git checkout, Git LFS transfer, or
-evaluator-time download is required after the Isaac base image is available.
+The policy runs the official benchmark's own scene loader, Lula configuration
+and assets. That tree is checked into `vendor/benchmark/` as an unmodified copy
+of `EBiM-Benchmark/benchmark`, so the default build needs no model, dataset,
+package install, Git checkout, Git LFS transfer, or evaluator-time download
+after the Isaac base image is available.
+
+To build against the official repository directly instead:
+
+```bash
+docker build --build-arg BENCHMARK_SOURCE=upstream -t airsign-ebim-task3 .
+```
+
+That clones `EBiM-Benchmark/benchmark` at the pinned commit, resolves
+`assets/robot_room.usd` through the public Git LFS API, and fetches the Robotiq
+robot USD from the `Robotiq_DEMO` branch where the Task 3 launchers expect it.
+Both paths produce byte-identical trees and both verify the same SHA-256
+hashes during the build. `vendor/benchmark/PROVENANCE.md` records the official
+source and hash of every vendored file; `scripts/fetch_benchmark.sh` is the
+upstream fetch used by the `upstream` build.
 
 ## Run
 

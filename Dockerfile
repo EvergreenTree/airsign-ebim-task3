@@ -3,11 +3,29 @@ FROM nvcr.io/nvidia/isaac-sim:5.1.0
 USER root
 
 ARG BENCHMARK_COMMIT=e36119cc43e949dc6269bfe5c1e7f613f9f24d0c
+ARG ROBOT_ASSET_REF=c2439d961b652b1eda6122bf530c58cb9559b219
 
-WORKDIR /opt/ebim-benchmark
+# Where the official EBiM benchmark tree comes from.
+#   vendored  (default) - the copy checked into vendor/benchmark/. No network,
+#                         so the build cannot fail on a transient fetch.
+#   upstream            - cloned from EBiM-Benchmark/benchmark at build time by
+#                         scripts/fetch_benchmark.sh.
+# Both produce byte-identical trees; the SHA-256 checks below run either way and
+# vendor/benchmark/PROVENANCE.md lists the hash of every file.
+ARG BENCHMARK_SOURCE=vendored
+
 COPY vendor/benchmark/ /opt/ebim-benchmark/
+COPY scripts/fetch_benchmark.sh /usr/local/bin/fetch_benchmark.sh
 
-RUN test "$(cat /opt/ebim-benchmark/BENCHMARK_COMMIT)" = "${BENCHMARK_COMMIT}" \
+RUN if [ "${BENCHMARK_SOURCE}" = "upstream" ]; then \
+        rm -rf /opt/ebim-benchmark \
+        && apt-get update \
+        && apt-get install -y --no-install-recommends git curl ca-certificates \
+        && rm -rf /var/lib/apt/lists/* \
+        && BENCHMARK_COMMIT="${BENCHMARK_COMMIT}" ROBOT_ASSET_REF="${ROBOT_ASSET_REF}" \
+           bash /usr/local/bin/fetch_benchmark.sh /opt/ebim-benchmark; \
+    fi \
+    && test "$(cat /opt/ebim-benchmark/BENCHMARK_COMMIT)" = "${BENCHMARK_COMMIT}" \
     && echo 'bd04da2643bb515ebe311a6a17fd36bf9b32be95ad9e8893a68d44cf2dcc56d3  /opt/ebim-benchmark/assets/robot_room.usd' \
        | sha256sum -c - \
     && echo 'aa1a833de48cc543c73957461dab82fe0979320b7c0b6a0a113d24b500075e5c  /opt/ebim-benchmark/task1_isaacsim/assets/Robotiq_2f_85_with_d405_mobile_fr3_duo_v0_2.usd' \
