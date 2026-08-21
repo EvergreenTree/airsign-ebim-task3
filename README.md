@@ -33,8 +33,11 @@ for an offline or air-gapped build:
 docker build --build-arg BENCHMARK_SOURCE=vendored -t airsign-ebim-task3 .
 ```
 
-Both paths produce byte-identical trees and both verify the same SHA-256 hashes
-during the build. `vendor/benchmark/PROVENANCE.md` records the official source
+Both paths verify the same SHA-256 hashes during the build, and every
+benchmark file the policy loads is byte-for-byte identical between them; the
+upstream fetch additionally materialises other files from the same paths and
+keeps its `.git` directory. The fetch takes about 90 seconds and produces
+roughly 125 MB. `vendor/benchmark/PROVENANCE.md` records the official source
 and hash of every vendored file.
 
 ## Run

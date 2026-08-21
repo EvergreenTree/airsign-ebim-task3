@@ -34,10 +34,26 @@ verify() {
   fi
 }
 
+# A full checkout of the pinned commit materialises several hundred megabytes
+# of assets the Task 3 policy never loads. Fetch only the paths the scene
+# loader, Lula configuration and licence files actually need.
+SPARSE_PATHS=(
+  LICENSE
+  NOTICE
+  CONTRIBUTORS.md
+  assets/bowl2.usd
+  assets/Collected_head
+  scripts
+  task3_isaacsim
+)
+
 echo "cloning ${REMOTE} at ${BENCHMARK_COMMIT}"
-git clone --filter=blob:none --no-checkout "${REMOTE}" "${destination}"
+git clone --filter=blob:none --no-checkout --sparse "${REMOTE}" "${destination}"
+git -C "${destination}" sparse-checkout init --no-cone
+git -C "${destination}" sparse-checkout set --no-cone -- "${SPARSE_PATHS[@]}"
 git -C "${destination}" checkout --detach "${BENCHMARK_COMMIT}"
 printf '%s\n' "${BENCHMARK_COMMIT}" > "${destination}/BENCHMARK_COMMIT"
+mkdir -p "${destination}/assets"
 
 # The room USD is stored in Git LFS. Resolve the object through the public LFS
 # batch API rather than requiring a git-lfs client in the build environment.

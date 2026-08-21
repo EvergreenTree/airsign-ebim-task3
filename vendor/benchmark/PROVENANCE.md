@@ -7,9 +7,16 @@ Every file under `vendor/benchmark/` is an unmodified copy of official
 - Robot asset revision: `c2439d961b652b1eda6122bf530c58cb9559b219` (branch `Robotiq_DEMO`)
 
 `scripts/fetch_benchmark.sh` rebuilds this tree directly from the official
-repository and verifies it against the hashes below, so the vendored copy and
-an upstream fetch are byte-identical. The container can be built either way:
-see `--build-arg BENCHMARK_SOURCE=upstream` in the README.
+repository. Verified on 2026-08-22: every one of the 42 benchmark files below
+comes back byte-for-byte identical from that fetch. The upstream tree is a
+superset — a sparse checkout of `scripts/` and `task3_isaacsim/` also
+materialises 65 further files from those paths that the policy never loads —
+and it keeps its `.git` directory, so the pinned revision can be verified in
+place. `BENCHMARK_COMMIT` and this file are the only two entries below that
+are not upstream content.
+
+The container builds from the upstream fetch by default; see
+`--build-arg BENCHMARK_SOURCE=vendored` in the README for the offline build.
 
 ## Files not carried by a plain checkout of the pinned commit
 
