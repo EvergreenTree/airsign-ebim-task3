@@ -707,21 +707,25 @@ class HierarchicalPolicyRunner:
         return failed_index, True
 
     def _defer_current_scope(self, primitive: Primitive) -> tuple[bool, str]:
+        # A station the base cannot reach is a routing failure, not a safety
+        # hazard. Ending the episode here forfeits every later stage: in seed-2
+        # of the 2026-08-22 acceptance set the cup carry exhausted its retries
+        # during Stage 1 and the run stopped at 1.0 points with feeding,
+        # recovery and cleanup untried. Set the object down and carry on with
+        # the next scope instead. Genuine hazards -- a lost carried object, a
+        # lost actuator -- still reach `tick` through
+        # `unrecoverable_failure_reason` and still emergency-stop there.
         carried_objects = tuple(primitive.metadata.get("carried_objects", ()))
-        if carried_objects:
-            reason = (
-                "unrecoverable carried-object navigation: "
-                + ", ".join(str(name) for name in carried_objects)
-            )
-            self.failed = True
-            self.actuator.emergency_stop(reason)
-            return False, reason
         destination_label = primitive.metadata.get("on_exhaustion_label")
         if destination_label is None:
             self.primitive_index = self._scope_end(self.primitive_index)
         else:
             self.primitive_index = self._index_for_label(str(destination_label))
-        should_open = bool(primitive.metadata.get("on_exhaustion_open", True))
+        # Always free the jaws when giving up mid-carry, so the next scope
+        # starts with an empty gripper rather than an object it cannot use.
+        should_open = bool(
+            primitive.metadata.get("on_exhaustion_open", True)
+        ) or bool(carried_objects)
         if should_open:
             arm = {
                 Stage.TABLE_SETUP: Arm.RIGHT,
@@ -731,6 +735,8 @@ class HierarchicalPolicyRunner:
             }[self.stage]
             self.actuator.backoff_and_open(primitive.arm or arm)
         failure = f"{self.stage.value}:{primitive.label}"
+        if carried_objects:
+            failure += " (set down " + ", ".join(str(n) for n in carried_objects) + ")"
         self.deferred_failures.append(failure)
         self.retries = 0
         self._recovery_resume_index = None

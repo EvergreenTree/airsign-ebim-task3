@@ -686,7 +686,12 @@ def test_loaded_navigation_has_separate_station_fallback_budget() -> None:
     assert not actuator.stops
 
 
-def test_exhausted_loaded_navigation_stops_without_dropping_object() -> None:
+def test_exhausted_loaded_navigation_sets_the_object_down_and_continues() -> None:
+    """An unreachable station must not forfeit every later stage.
+
+    Emergency-stopping here ended seed-2 of the 2026-08-22 acceptance set at
+    1.0 points during Stage 1, with feeding, recovery and cleanup untried.
+    """
     actuator = FakeActuator(failures=7)
     runner = HierarchicalPolicyRunner(actuator)
     runner.primitive_index = next(
@@ -697,11 +702,26 @@ def test_exhausted_loaded_navigation_stops_without_dropping_object() -> None:
     for _ in range(6):
         assert not runner.tick()[0]
     ok, message = runner.tick()
+    assert ok
+    assert message == (
+        "deferred TABLE_SETUP:carry bowl to seat (set down bowl); continuing"
+    )
+    assert not runner.failed
+    assert not actuator.stops
+    # The jaws are freed so the next scope does not start holding an object it
+    # cannot deliver.
+    assert actuator.backoffs
+    assert runner.current.label == "navigate to cup"
+
+
+def test_a_genuinely_lost_carried_object_still_emergency_stops() -> None:
+    actuator = FakeActuator(failures=1)
+    runner = HierarchicalPolicyRunner(actuator)
+    actuator.unrecoverable_failure_reason = "carried object lost"
+    ok, message = runner.tick()
     assert not ok
-    assert message == "unrecoverable carried-object navigation: bowl"
     assert runner.failed
-    assert actuator.stops == [message]
-    assert not actuator.backoffs
+    assert actuator.stops == ["carried object lost"]
 
 
 def test_every_loaded_navigation_declares_its_physically_carried_objects() -> None:
