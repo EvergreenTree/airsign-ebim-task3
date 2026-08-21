@@ -6,22 +6,25 @@ ARG BENCHMARK_COMMIT=e36119cc43e949dc6269bfe5c1e7f613f9f24d0c
 ARG ROBOT_ASSET_REF=c2439d961b652b1eda6122bf530c58cb9559b219
 
 # Where the official EBiM benchmark tree comes from.
-#   vendored  (default) - the copy checked into vendor/benchmark/. No network,
-#                         so the build cannot fail on a transient fetch.
-#   upstream            - cloned from EBiM-Benchmark/benchmark at build time by
-#                         scripts/fetch_benchmark.sh.
+#   upstream  (default) - cloned from EBiM-Benchmark/benchmark at build time by
+#                         scripts/fetch_benchmark.sh, so the image is built
+#                         against the official repository.
+#   vendored            - the copy checked into vendor/benchmark/. Needs no
+#                         network, for an offline or air-gapped build.
 # Both produce byte-identical trees; the SHA-256 checks below run either way and
 # vendor/benchmark/PROVENANCE.md lists the hash of every file.
-ARG BENCHMARK_SOURCE=vendored
+ARG BENCHMARK_SOURCE=upstream
 
 COPY vendor/benchmark/ /opt/ebim-benchmark/
 COPY scripts/fetch_benchmark.sh /usr/local/bin/fetch_benchmark.sh
 
 RUN if [ "${BENCHMARK_SOURCE}" = "upstream" ]; then \
         rm -rf /opt/ebim-benchmark \
-        && apt-get update \
-        && apt-get install -y --no-install-recommends git curl ca-certificates \
-        && rm -rf /var/lib/apt/lists/* \
+        && if ! command -v git >/dev/null || ! command -v curl >/dev/null; then \
+               apt-get update \
+               && apt-get install -y --no-install-recommends git curl ca-certificates \
+               && rm -rf /var/lib/apt/lists/*; \
+           fi \
         && BENCHMARK_COMMIT="${BENCHMARK_COMMIT}" ROBOT_ASSET_REF="${ROBOT_ASSET_REF}" \
            bash /usr/local/bin/fetch_benchmark.sh /opt/ebim-benchmark; \
     fi \

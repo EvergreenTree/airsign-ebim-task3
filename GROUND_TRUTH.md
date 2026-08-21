@@ -1,7 +1,13 @@
 # Ground-truth declaration
 
-AirSign declares this as a **Policy Submission using simulator ground truth**
-for EBiM Phase I.
+AirSign declares this as a **Repository Submission using simulator ground
+truth** for EBiM Phase I. On the submission form's ground-truth question the
+answer is *"Yes — we use the simulator's ground-truth object poses"*.
+
+The form notes that declaring ground-truth use carries a lower scoring weight
+than solving perception, and that the declaration is taken in good faith and
+checked against the submitted code. The paragraphs below state exactly what is
+read and what is never written, so the declaration can be verified.
 
 The policy reads live transforms, bounds, bean state, and task-region state for
 planning, verification, recovery, and scoring. These reads replace perception

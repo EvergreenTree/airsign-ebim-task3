@@ -18,28 +18,32 @@ The runtime is pinned to EBiM benchmark commit
 `e36119cc43e949dc6269bfe5c1e7f613f9f24d0c`.
 
 The policy runs the official benchmark's own scene loader, Lula configuration
-and assets. That tree is checked into `vendor/benchmark/` as an unmodified copy
-of `EBiM-Benchmark/benchmark`, so the default build needs no model, dataset,
-package install, Git checkout, Git LFS transfer, or evaluator-time download
-after the Isaac base image is available.
+and assets. By default the image builds them from the official repository:
+`scripts/fetch_benchmark.sh` clones `EBiM-Benchmark/benchmark` at the pinned
+commit, resolves `assets/robot_room.usd` through the public Git LFS API, and
+fetches the Robotiq robot USD from the `Robotiq_DEMO` branch. Neither of those
+two assets is carried by a plain checkout of the pinned commit — the room USD
+is a 133-byte LFS pointer there, and the robot USD is not tracked on `main` at
+all.
 
-To build against the official repository directly instead:
+The same tree is also checked into `vendor/benchmark/` as an unmodified copy,
+for an offline or air-gapped build:
 
 ```bash
-docker build --build-arg BENCHMARK_SOURCE=upstream -t airsign-ebim-task3 .
+docker build --build-arg BENCHMARK_SOURCE=vendored -t airsign-ebim-task3 .
 ```
 
-That clones `EBiM-Benchmark/benchmark` at the pinned commit, resolves
-`assets/robot_room.usd` through the public Git LFS API, and fetches the Robotiq
-robot USD from the `Robotiq_DEMO` branch where the Task 3 launchers expect it.
-Both paths produce byte-identical trees and both verify the same SHA-256
-hashes during the build. `vendor/benchmark/PROVENANCE.md` records the official
-source and hash of every vendored file; `scripts/fetch_benchmark.sh` is the
-upstream fetch used by the `upstream` build.
+Both paths produce byte-identical trees and both verify the same SHA-256 hashes
+during the build. `vendor/benchmark/PROVENANCE.md` records the official source
+and hash of every vendored file.
 
 ## Run
 
-On a GPU host with the native NAS installation:
+The container is the supported entry point; see *Container usage* below. The
+native path additionally requires `scripts/bootstrap_remote.sh`, which builds a
+managed virtualenv and stages the benchmark assets under
+`$AIRSIGN_TASK3_ROOT` (default `/mnt/nas/evergreen/ebim-task3`). With that in
+place:
 
 ```bash
 ./run.sh --seed 0 --headless --ui-port 18091
@@ -49,10 +53,11 @@ After scene calibration, this command starts the autonomous episode without an
 operator action. Add `--wait-for-start` only for an interactive dashboard
 rehearsal that should remain idle until `POST /api/control/start`.
 
-Forward the SSH-only dashboard from the simulator host:
+The dashboard binds to loopback only. To reach it from a workstation, forward
+the port from whichever host runs the simulator:
 
 ```bash
-ssh -N -L 127.0.0.1:18091:127.0.0.1:18091 dsw-evergreen
+ssh -N -L 127.0.0.1:18091:127.0.0.1:18091 <simulator-host>
 ```
 
 Then open `http://127.0.0.1:18091`. The dashboard exposes synchronized camera,
@@ -82,19 +87,22 @@ The container writes `episode.jsonl`, `summary.json`, and `evidence.mp4` into
 a per-episode directory beneath that path, and exits on its own once the
 episode terminates.
 
-The vendored benchmark slice contains the official scene loader, Task 3 Lula
-configuration, room support asset, head model and textures, notices, and the
-room/robot USDs from the pinned public benchmark revision. The image uses the matching Python packages
-already shipped in the pinned Isaac Sim base image and performs an import and
-bytecode-compilation smoke check during the build.
+The image uses the Python packages already shipped in the pinned Isaac Sim base
+image and performs an import and bytecode-compilation smoke check during the
+build.
 
 The service endpoints are:
 
 - `GET /api/state`
 - `POST /api/control/{start,pause,resume,reset}`
 - `POST /api/feedback`
-- `GET /stream/{overview,head,left_wrist,right_wrist}`
+- `GET /stream/{overview,head,left_wrist}`
 - `GET /ws/telemetry`
+
+Three cameras are served. `overview` is the room camera also burned into
+`evidence.mp4`; `head` is a fixed head-safety view; `left_wrist` is a
+supply-table grasp-detail view, labelled GRASP DETAIL in the dashboard, rather
+than a camera mounted on the left wrist.
 
 ## Scoring and evidence
 
@@ -105,8 +113,11 @@ The upstream development scorer remains diagnostic and is never presented as
 the competition estimate because it includes the tray and discretizes recovery.
 
 Each run writes `episode.jsonl`, `summary.json`, camera/video evidence, and
-safety telemetry under the configured run directory. Validated artifacts are
-mirrored to OSS with checksums.
+safety telemetry under the configured run directory. `episode.jsonl` is the
+authoritative record: it carries every primitive boundary, gripper contact
+report, navigation decision and score update. `summary.json` holds the final
+telemetry snapshot, and `scripts/summarize_runs.py` prints the stage table for
+one or more run directories.
 
 ## Tests
 

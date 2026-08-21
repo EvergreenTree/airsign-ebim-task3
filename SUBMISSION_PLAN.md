@@ -1,16 +1,19 @@
 # Task 3 Phase I submission plan
 
-Deadline: **2026-08-23 19:59 Asia/Shanghai** (2026-08-23 11:59 UTC).
-The submission declares the Phase I **simulator ground-truth** track.
+Deadline: **2026-08-22 (AoE, UTC-12)** = **2026-08-23 11:59 UTC** =
+**2026-08-23 19:59 Asia/Shanghai**.
+
+The submission answers "Yes" to the form's ground-truth question: the policy
+reads simulator ground-truth object poses and states.
 
 ## Rule decision: do not train a VLA for Phase I
 
 The controlling documents ask for an autonomous runnable **policy**, not a
-particular learned architecture. Rulebook 1.0 defines only task behavior and
-scoring. The Phase I notice explicitly permits simulator ground-truth object
-positions and states, requires a public repository with a Dockerfile and run
-instructions for Option A, and treats model weights or datasets as optional
-implementation details rather than submission requirements.
+particular learned architecture. Rulebook 1.0 defines only task behaviour and
+scoring. The Repository Submission form permits simulator ground-truth object
+positions and states for Phase I, requires a public repository with a
+Dockerfile and a run README, and treats source code, model weights and
+datasets as optional.
 
 The Phase I deliverable should therefore be the most reliable autonomous
 policy we can validate by Sunday: a deterministic ground-truth behavior tree
@@ -31,9 +34,26 @@ Phase I policy is frozen.
   continuous at `4 × recovered mass / original mass`.
 - **Stage 4 — Cleanup, 4 points:** place each of the four official objects
   inside the sink for one point each. The tray is not a scored object.
-- **Ranking:** highest fully completed stage, then total score, then completion
-  time. Three evaluation runs are averaged. A container that fails to build or
-  run scores zero.
+- **Ranking:** highest completed stage, then total score, then completion time
+  (Rulebook 1.0, "Priority Ranking"). The Rulebook sets no time limit for
+  Track 3.
+
+Two things govern the score that are **not** in the Rulebook, both stated on
+the Repository Submission form:
+
+- The rubric score is multiplied by a weight reflecting **when** the entry was
+  submitted and **whether simulator ground-truth poses were used**. Solving
+  perception scores a higher weight. This submission uses ground truth and
+  therefore takes the lower multiplier. The weight values are distributed by
+  announcement email, not published in the repository or the Rulebook.
+- A **Technical Report** submission is weighted at **0.65** of a policy
+  submission's scale, so a policy that actually runs is worth filing over a
+  report about one.
+
+Submission goes to `EBiM-Benchmark/submissions`, not the benchmark repository:
+one *Repository Submission* issue per team per task, carrying the registered
+team name and point-of-contact email, which organizers verify against the
+registration records. A later issue supersedes an earlier one.
 
 ## Policy objective
 
@@ -116,24 +136,35 @@ claim.
 
 ### Technical report fallback
 
-Use Option B only if the policy cannot pass the clean-container gate or cannot
-produce repeatable nonzero autonomous runs. Include the exact current code,
-all attempted-run results, logs, telemetry, video evidence, known physical
-failures, and a concrete real-robot migration plan. Submit only one option for
-Task 3.
+Use the **Technical Report** form only if the policy cannot pass the
+clean-container gate or cannot produce repeatable nonzero autonomous runs. It
+is weighted at 0.65 of a policy submission, and its own form states that a
+working policy scores higher than a report about one, so it is strictly a
+fallback. Its rubric is method and system completeness 25%, simulation and task
+completion 30%, policy and code readiness 25%, real-world deployment readiness
+20%, and completion claims must be evidenced by a repository, logs or video.
+File one form or the other for Task 3, not both.
 
 ## Execution calendar
 
-- **Thu Aug 20:** land score-seeking runner, independent cleanup, scorer fixes,
-  and unit/contract tests; run one full seed 0 to expose the first Stage 2 issue.
-- **Fri Aug 21:** stabilize Stage 2 and Stage 3; run focused development episodes
-  and one end-to-end seed 0.
-- **Sat Aug 22:** stabilize independent Stage 4 transfers; execute clean seeds
-  0, 1, and 2; fix only repeatable score-limiting failures.
-- **Sun Aug 23 morning:** clean container build and evaluator-command rehearsal;
-  rerun any invalid acceptance seed.
-- **Sun Aug 23 by 16:00 CST:** freeze source and artifacts, calculate the mean,
-  choose Policy or Report, and draft the issue.
+Completed:
+
+- **Thu Aug 20:** score-seeking runner, independent cleanup, scorer fixes, and
+  the unit/contract suite.
+- **Fri Aug 21:** first full end-to-end episodes. Four defects found and fixed
+  from run evidence: the spoon grasp driver gate, the missing dining-station
+  final approach, spoon posture moves dropping a held spoon, and the vendored
+  slice missing the head asset. Repository published.
+
+Remaining:
+
+- **Sat Aug 22:** run clean seeds 0, 1 and 2 with every fix; repair only
+  repeatable score-limiting failures.
+- **Sun Aug 23 morning:** container build rehearsal against the documented
+  command; rerun any invalid acceptance seed.
+- **Sun Aug 23 by 16:00 CST:** freeze source and artifacts, compute the honest
+  mean over all acceptance runs, choose Repository Submission or Technical
+  Report, and prepare the issue.
 - **Sun Aug 23 by 18:00 CST:** file and read back the issue, leaving nearly two
   hours before the 19:59 CST deadline.
 

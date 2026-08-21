@@ -15,7 +15,10 @@ from pydantic import BaseModel, Field
 from .runtime import RuntimeStore
 
 
-CAMERAS = ("overview", "head", "left_wrist", "right_wrist")
+# Every entry here must have a render product attached in isaac_native;
+# `frame()` falls back to the overview image, so a camera listed without
+# one silently serves a duplicate view under a different label.
+CAMERAS = ("overview", "head", "left_wrist")
 
 
 class Feedback(BaseModel):
@@ -87,7 +90,6 @@ def _dashboard_html() -> str:
       <div class="camera-grid">
         <div><img data-stream="/stream/head" alt="head camera"/><span class="tag">HEAD SAFETY</span></div>
         <div><img data-stream="/stream/left_wrist" alt="grasp detail camera"/><span class="tag">GRASP DETAIL</span></div>
-        <div><img data-stream="/stream/right_wrist" alt="right wrist camera"/><span class="tag">RIGHT WRIST</span></div>
       </div>
     </section>
     <aside>

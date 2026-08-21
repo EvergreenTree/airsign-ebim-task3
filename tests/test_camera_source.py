@@ -68,3 +68,20 @@ def test_native_webrtc_uses_official_streaming_experience() -> None:
     launcher = (Path(__file__).parents[1] / "run.sh").read_text(encoding="utf-8")
     assert "runtime-libs/xrandr" in launcher
     assert "LD_LIBRARY_PATH" in launcher
+
+
+def test_every_advertised_camera_has_a_render_product() -> None:
+    """A camera without a render product serves the overview under its label.
+
+    `TelemetryStore.frame` falls back to the overview image, so listing a
+    camera that nothing populates shows a duplicate view to the operator.
+    """
+    root = Path(__file__).parents[1] / "airsign_task3"
+    dashboard = (root / "dashboard.py").read_text(encoding="utf-8")
+    runtime = (root / "isaac_native.py").read_text(encoding="utf-8")
+    listed = dashboard.split("CAMERAS = (", 1)[1].split(")", 1)[0]
+    cameras = [item.strip().strip('"') for item in listed.split(",") if item.strip()]
+    assert cameras[0] == "overview"
+    for camera in cameras[1:]:
+        assert f'store.set_frame("{camera}"' in runtime, camera
+    assert 'data-stream="/stream/right_wrist"' not in dashboard
