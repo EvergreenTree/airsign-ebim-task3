@@ -51,9 +51,23 @@ docker run --rm --gpus all --network host \
   airsign-ebim-task3 --seed 0 --headless --ui-port 18091
 ```
 
+To keep the episode artifacts after the container exits, mount a host
+directory over the run root:
+
+```bash
+docker run --rm --gpus all --network host \
+  -e ACCEPT_EULA=Y -e PRIVACY_CONSENT=Y \
+  -v "$PWD/runs:/workspace/runs" \
+  airsign-ebim-task3 --seed 0 --headless --ui-port 18091
+```
+
+The container writes `episode.jsonl`, `summary.json`, and `evidence.mp4` into
+a per-episode directory beneath that path, and exits on its own once the
+episode terminates.
+
 The vendored benchmark slice contains the official scene loader, Task 3 Lula
-configuration, room support asset, notices, and the room/robot USDs from the
-pinned public benchmark revision. The image uses the matching Python packages
+configuration, room support asset, head model and textures, notices, and the
+room/robot USDs from the pinned public benchmark revision. The image uses the matching Python packages
 already shipped in the pinned Isaac Sim base image and performs an import and
 bytecode-compilation smoke check during the build.
 
