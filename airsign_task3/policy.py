@@ -151,12 +151,24 @@ def build_table_setup_plan(*, include_plate: bool = False) -> list[Primitive]:
                           metadata={"position_tolerance_m": 0.020}
                           if object_name == "spoon"
                           else {}),
+                # The spoon is taken with a scanned side grasp, so the wrist
+                # can end up in a configuration from which the nominal
+                # clearance and transit poses are out of reach. Both are
+                # posture moves, not task requirements: treat them as best
+                # effort for the spoon so an unreachable pose costs a slightly
+                # wider carry rather than dropping a spoon that is physically
+                # held and restarting the whole contact chain. Runs
+                # seed-{0,2}-20260821T23* each lost the spoon this way, with
+                # the stow stalling 0.13-0.29 m short while the grasp itself
+                # was sound.
                 Primitive(PrimitiveKind.MOVE_TCP, f"retract {object_name} from supply table",
                           target=object_name, arm=arm, offset_xyz=(0.20, 0.0, 0.02),
-                          orientation_hint=f"carry_{object_name}"),
+                          orientation_hint=f"carry_{object_name}",
+                          metadata={"best_effort": True} if object_name == "spoon" else {}),
                 Primitive(PrimitiveKind.MOVE_TCP, f"stow loaded {object_name} for carry",
                           target=object_name, arm=arm,
-                          orientation_hint="loaded_transit_stow"),
+                          orientation_hint="loaded_transit_stow",
+                          metadata={"best_effort": True} if object_name == "spoon" else {}),
                 # The measured bowl carry needs about 188 wall-seconds: the
                 # navigation itself remains bounded, but loaded portal yaw,
                 # corridor alignment, and the final table approach are all

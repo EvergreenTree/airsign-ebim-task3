@@ -751,3 +751,19 @@ def test_cleanup_object_failure_defers_only_that_object() -> None:
     assert message == "deferred CLEANUP:navigate to cleanup spoon; continuing"
     assert runner.current.label == "check cup already inside sink"
     assert not actuator.stops
+
+
+def test_spoon_posture_moves_do_not_drop_a_held_spoon() -> None:
+    """An unreachable clearance or transit pose must not restart the grasp.
+
+    The spoon is taken with a scanned side grasp, so the nominal carry and
+    stow poses are sometimes out of reach. Both are posture moves; failing
+    them best-effort keeps the physically held spoon.
+    """
+    plan = build_table_setup_plan()
+    for label in ("retract spoon from supply table", "stow loaded spoon for carry"):
+        primitive = next(item for item in plan if item.label == label)
+        assert primitive.metadata["best_effort"] is True
+    for label in ("retract bowl from supply table", "stow loaded bowl for carry"):
+        primitive = next(item for item in plan if item.label == label)
+        assert "best_effort" not in primitive.metadata
