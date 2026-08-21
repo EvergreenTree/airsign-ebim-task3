@@ -20,6 +20,22 @@ from pathlib import Path
 FIELDS = ("stage1", "stage2", "stage3", "stage4", "total")
 
 
+def policy_source(run_dir: Path) -> str | None:
+    """Read the policy source hash the run stamped on its scene_ready event."""
+    episode = run_dir / "episode.jsonl"
+    if not episode.is_file():
+        return None
+    with episode.open(encoding="utf-8") as handle:
+        for line in handle:
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("event") == "scene_ready":
+                return (event.get("details") or {}).get("policy_source_sha256")
+    return None
+
+
 def deferred_scopes(run_dir: Path) -> list[str]:
     """Recover the deferred-scope list from the terminal episode event.
 
@@ -54,6 +70,7 @@ def load(run_dir: Path) -> dict:
         "simulated_seconds": summary.get("simulated_seconds") or 0.0,
         "wall_seconds": summary.get("wall_seconds") or 0.0,
         "deferred": summary.get("deferred_failures") or deferred_scopes(run_dir),
+        "policy_source": policy_source(run_dir),
         "failure_reason": summary.get("failure_reason"),
         **{name: float(scores.get(name) or 0.0) for name in FIELDS},
     }
@@ -86,6 +103,17 @@ def main(argv: list[str]) -> int:
         f"{means['stage2']:>5.2f} {means['stage3']:>5.2f} {means['stage4']:>5.2f} "
         f"{means['total']:>6.2f}"
     )
+    sources = {row["policy_source"] for row in rows}
+    if len(sources) > 1 or None in sources:
+        print(
+            "\nWARNING: these runs did not all come from the same policy source, "
+            "so this mean does not describe one version:"
+        )
+        for row in rows:
+            print(f"  {row['run']}: {row['policy_source'] or 'unstamped'}")
+    else:
+        print(f"\npolicy source sha256: {sources.pop()}")
+
     for row in rows:
         if row["failure_reason"]:
             print(f"\n{row['run']}: FAILED — {row['failure_reason']}")
