@@ -90,9 +90,13 @@ The container writes `episode.jsonl`, `summary.json`, and `evidence.mp4` into
 a per-episode directory beneath that path, and exits on its own once the
 episode terminates.
 
-The image uses the Python packages already shipped in the pinned Isaac Sim base
-image and performs an import and bytecode-compilation smoke check during the
-build.
+The dashboard's web stack (`fastapi`, `uvicorn`, `httptools`, `pydantic`) and
+`opencv-python-headless` are not part of `isaacsim[all]`. The build prefers
+whatever the base image already provides, so no version is forced onto Isaac's
+own dependencies, and installs the pinned set from `requirements-runtime.txt`
+only if an import is missing. It then re-checks every import and
+byte-compiles the policy, so a build that could not satisfy them fails at
+build time rather than at episode start.
 
 The service endpoints are:
 

@@ -38,7 +38,18 @@ WORKDIR /workspace
 COPY airsign_task3/ /workspace/airsign_task3/
 COPY config/ /workspace/config/
 COPY run.sh /workspace/run.sh
+COPY requirements-runtime.txt /workspace/requirements-runtime.txt
+
+# The dashboard's web stack and OpenCV are not part of isaacsim[all]; the
+# native install pip-installs them alongside it. Prefer whatever the base image
+# already ships, so no version is forced on Isaac's own dependencies, and fall
+# back to installing the pinned set only if an import is missing. The second
+# check is unconditional: a build that cannot import these must fail here
+# rather than at episode start.
 RUN chmod +x /workspace/run.sh \
+    && ( /isaac-sim/python.sh -c 'import cv2, fastapi, httptools, numpy, PIL, pydantic, uvicorn' \
+         || /isaac-sim/python.sh -m pip install --no-cache-dir \
+              -r /workspace/requirements-runtime.txt ) \
     && /isaac-sim/python.sh -c 'import cv2, fastapi, httptools, numpy, PIL, pydantic, uvicorn; import airsign_task3.main' \
     && /isaac-sim/python.sh -m compileall -q /workspace/airsign_task3
 
