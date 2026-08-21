@@ -203,6 +203,12 @@ def test_recovery_and_cleanup_pickups_use_dining_station_approach() -> None:
         primitive.metadata["manipulation_yaw_tolerance_deg"] == 15.0
         for primitive in cleanup_navigations
     )
+    # Same acceptance as feeding and bean recovery: cleanup starts beside the
+    # table, where a full re-route can fail to plan at all.
+    assert all(
+        primitive.metadata["nearby_station_acceptance_m"] == 0.75
+        for primitive in cleanup_navigations
+    )
     assert all(
         "dining_final_advance" not in primitive.metadata
         for primitive in cleanup_navigations

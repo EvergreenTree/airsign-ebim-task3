@@ -466,6 +466,15 @@ def build_cleanup_plan() -> list[Primitive]:
                               "timeout_s": 180.0,
                               "dining_station": "auto",
                               "manipulation_yaw_tolerance_deg": 15.0,
+                              # Cleanup starts from wherever the previous scope
+                              # ended, usually already beside the table. Route
+                              # planning from there found no viable candidate
+                              # at all 14 times in seed-0-20260822T002705,
+                              # deferring every one of the four objects. Accept
+                              # the station already occupied and let the
+                              # actuator orient and make its final approach,
+                              # exactly as feeding and bean recovery do.
+                              "nearby_station_acceptance_m": 0.75,
                           }),
                 # A dining-table pickup is at the right arm's extension limit:
                 # the pregrasp converged with z on target and xy 0.13-0.19 m
