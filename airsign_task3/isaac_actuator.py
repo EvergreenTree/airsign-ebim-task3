@@ -146,6 +146,13 @@ SPOON_SIDE_GRASP_RETRY_STEP_RAD = math.radians(15.0)
 SPOON_MIN_SIDE_GRASP_ANGLE_RAD = math.radians(10.0)
 SPOON_BILATERAL_CONTACT_CONFIRM_STEPS = 3
 SPOON_MIN_CONTACT_DRIVER = 0.78
+# A pinch whose driver stops just short of the closed gate while both
+# inner fingers are confirmed on the spoon and real effort has built up is
+# force closure on the handle, not a missed grasp.  Observed rejections sat
+# at 0.759-0.778 with 2.8-4.6 N.m of squeeze.  A false accept costs one
+# lift retry, because the lift verifies the spoon is physically retained.
+SPOON_STALLED_CONTACT_DRIVER = 0.74
+SPOON_STALLED_CONTACT_EFFORT_NM = 2.0
 SPOON_GRASP_MAX_DISPLACEMENT_M = 0.08
 # The mouth target is derived from the live eye assembly.  These offsets keep
 # the TCP on the table-facing side of the face, with a collision-clear approach
@@ -3391,12 +3398,17 @@ class IsaacPhysicalActuator(PhysicalActuator):
             prims=self._gripper_geometry_snapshot(sides),
         )
         if spoon_grasp:
+            def spoon_side_closed(side: Arm) -> bool:
+                if finals[side] >= SPOON_MIN_CONTACT_DRIVER:
+                    return True
+                return (
+                    finals[side] >= SPOON_STALLED_CONTACT_DRIVER
+                    and peak_efforts[side] >= SPOON_STALLED_CONTACT_EFFORT_NM
+                )
+
             return (
                 {"left", "right"} <= spoon_contact_sides
-                and all(
-                    finals[side] >= SPOON_MIN_CONTACT_DRIVER
-                    for side in sides
-                )
+                and all(spoon_side_closed(side) for side in sides)
                 and not spoon_displacement_exceeded
             )
         return contacted if strong_grip else contacted or reached

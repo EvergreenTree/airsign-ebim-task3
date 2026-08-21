@@ -445,6 +445,11 @@ def test_spoon_uses_live_pose_handle_anchor_and_two_pose_ik_scan() -> None:
     assert '"spoon_grasp_displacement_exceeded"' in source
     assert '{"left", "right"} <= spoon_contact_sides' in source
     assert "finals[side] >= SPOON_MIN_CONTACT_DRIVER" in source
+    assert "SPOON_STALLED_CONTACT_DRIVER = 0.74" in source
+    assert "SPOON_STALLED_CONTACT_EFFORT_NM = 2.0" in source
+    assert "def spoon_side_closed" in source
+    assert "peak_efforts[side] >= SPOON_STALLED_CONTACT_EFFORT_NM" in source
+    assert "all(spoon_side_closed(side) for side in sides)" in source
     assert "spoon_contact_pairs=[" in source
     assert '"world_corners"' in source
     assert "spoon_forward_xy = -handle_offset[:2]" in source
