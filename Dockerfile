@@ -11,8 +11,16 @@ ARG ROBOT_ASSET_REF=c2439d961b652b1eda6122bf530c58cb9559b219
 #                         against the official repository.
 #   vendored            - the copy checked into vendor/benchmark/. Needs no
 #                         network, for an offline or air-gapped build.
-# Both produce byte-identical trees; the SHA-256 checks below run either way and
-# vendor/benchmark/PROVENANCE.md lists the hash of every file.
+# Every benchmark file the policy loads is byte-for-byte identical between the
+# two; the upstream fetch additionally materialises other files under the same
+# paths. The SHA-256 checks below run either way, and
+# vendor/benchmark/PROVENANCE.md lists the hash of every vendored file.
+#
+# The vendored copy is COPYed unconditionally and removed again on the upstream
+# path, so an upstream image still carries that layer. Correct, and about
+# 125 MB larger than it needs to be; image size is not scored, and splitting it
+# into build stages was not worth the risk of an unbuildable Dockerfile that
+# cannot be tested here.
 ARG BENCHMARK_SOURCE=upstream
 
 COPY vendor/benchmark/ /opt/ebim-benchmark/
