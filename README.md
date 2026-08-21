@@ -126,6 +126,46 @@ report, navigation decision and score update. `summary.json` holds the final
 telemetry snapshot, and `scripts/summarize_runs.py` prints the stage table for
 one or more run directories.
 
+## Status and known limitations
+
+Measured behaviour, not intent. Every claim here comes from a run whose
+`episode.jsonl` is reproducible with the command above.
+
+**What works.** Stage 1 places the bowl and the cup at their assigned dining
+seats. Episodes terminate autonomously with no watchdog intervention and no
+emergency stop, and every stage failure is contained: a failed object is
+deferred and the policy continues to the next scope rather than ending the run.
+
+**The spoon is not placed, and this costs Stage 2 entirely.** The grasp itself
+succeeds -- both inner fingers are confirmed on the handle under 2.8-6 N.m of
+squeeze -- but the lift then reports `lifted: false` with the spoon having
+risen under 2 cm while the gripper driver climbs from 0.75 to 0.79. The thin
+handle is being squeezed out from between the Robotiq pads as the jaws
+continue to close. Because Stage 2 needs the spoon staged at the head-adjacent
+seat, `check spoon staged for feeding` fails and the feeding stage is skipped.
+This costs Stage 1's third point, all four Stage 2 points, and the Stage 4
+spoon point. It is a genuine manipulation limit rather than a threshold that
+can be retuned, and it is the largest single gap in this submission.
+
+**Stage 3's bowl pickup is at the arm's reach limit.** The base completes its
+0.28 m final approach, and the pregrasp then converges with z on target and xy
+roughly 0.15 m short, stalling there through every retry. Where it fails, the
+recovery ratio stays at zero and the stage is deferred.
+
+**Stage 4 is geometry-dependent.** Cleanup handles each object independently,
+so a failure costs one point rather than the stage. Objects at a reachable
+seat are grasped, lifted and carried; some seat geometries leave the pregrasp
+outside the arm's envelope in the same way Stage 3 does.
+
+**The container has not been built.** Neither machine available for this work
+has a container runtime, so the image itself is unbuilt and untested. What was
+verified instead: the vendored benchmark slice loads the scene, robot, head and
+beans in a real Isaac session; `scripts/fetch_benchmark.sh` was run end to end
+and returns every benchmark file byte-for-byte; and `import airsign_task3.main`
+succeeds outside a running Kit app. The runtime dependency step is written to
+prefer the base image's packages and install the pinned set only if an import
+is missing, but that fallback has not been exercised.
+
 ## Tests
 
 ```bash
