@@ -772,3 +772,20 @@ def test_spoon_posture_moves_do_not_drop_a_held_spoon() -> None:
     for label in ("retract bowl from supply table", "stow loaded bowl for carry"):
         primitive = next(item for item in plan if item.label == label)
         assert "best_effort" not in primitive.metadata
+
+
+def test_dining_pickups_use_a_reachable_pregrasp_standoff() -> None:
+    """Dining-table pickups sit at the right arm's extension limit.
+
+    The pregrasp converged with z on target and xy short, so the standoff is
+    kept low enough to buy horizontal reach while still clearing the object.
+    """
+    recovery = next(
+        item
+        for item in build_bean_recovery_plan()
+        if item.label == "recovery bowl pregrasp"
+    )
+    assert recovery.offset_xyz == (0.0, 0.0, 0.09)
+    for primitive in build_cleanup_plan():
+        if primitive.label.startswith("pregrasp cleanup "):
+            assert primitive.offset_xyz == (0.0, 0.0, 0.09)

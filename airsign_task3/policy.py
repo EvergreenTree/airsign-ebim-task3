@@ -335,7 +335,7 @@ def build_bean_recovery_plan() -> list[Primitive]:
             "recovery bowl pregrasp",
             target="bowl",
             arm=Arm.RIGHT,
-            offset_xyz=(0.0, 0.0, 0.12),
+            offset_xyz=(0.0, 0.0, 0.09),
             orientation_hint="top_bowl_internal",
         ),
         Primitive(
@@ -467,9 +467,14 @@ def build_cleanup_plan() -> list[Primitive]:
                               "dining_station": "auto",
                               "manipulation_yaw_tolerance_deg": 15.0,
                           }),
+                # A dining-table pickup is at the right arm's extension limit:
+                # the pregrasp converged with z on target and xy 0.13-0.19 m
+                # short in seed-{0,1}-20260821T23*. These targets sit above
+                # shoulder height, so a lower standoff buys horizontal reach.
+                # It still clears the cup and the bowl rim before the descent.
                 Primitive(PrimitiveKind.MOVE_TCP, f"pregrasp cleanup {object_name}",
                           target=object_name, arm=Arm.RIGHT,
-                          offset_xyz=(0.0, 0.0, 0.12), orientation_hint=pregrasp_hint),
+                          offset_xyz=(0.0, 0.0, 0.09), orientation_hint=pregrasp_hint),
                 Primitive(PrimitiveKind.GRIPPER, f"preshape cleanup {object_name}",
                           target=object_name, arm=Arm.RIGHT,
                           opening=0.0 if internal else (0.95 if object_name == "plate" else 1.0),
