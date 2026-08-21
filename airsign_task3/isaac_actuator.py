@@ -3373,6 +3373,22 @@ class IsaacPhysicalActuator(PhysicalActuator):
             side: float(measured[self.name_to_index[GRIPPER_DRIVERS[side]]])
             for side in sides
         }
+        if spoon_grasp and closing:
+            # The hold target tracks the *commanded* interpolation, which runs
+            # ahead of the jaws whenever the object blocks them. Re-applying it
+            # through the following arm motion keeps closing the gripper: the
+            # driver crept 0.75 -> 0.79 during `lift spoon` and squeezed the
+            # thin handle out from between the pads, so the lift reported the
+            # spoon risen under 2 cm and the grasp was replayed. Hold what the
+            # jaws actually reached instead, which keeps the contact force
+            # already established rather than adding to it.
+            for side in sides:
+                self._gripper_hold_targets[side] = finals[side]
+            self.store.event(
+                "spoon_grasp_hold_pinned",
+                label=primitive.label,
+                hold_targets={side.value: finals[side] for side in sides},
+            )
         contacted = contact_motion and all(
             stall_counts[side] >= 8 or force_counts[side] >= 2 for side in sides
         )

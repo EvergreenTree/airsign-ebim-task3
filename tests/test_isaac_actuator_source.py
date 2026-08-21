@@ -448,6 +448,10 @@ def test_spoon_uses_live_pose_handle_anchor_and_two_pose_ik_scan() -> None:
     assert "SPOON_STALLED_CONTACT_DRIVER = 0.74" in source
     assert "SPOON_STALLED_CONTACT_EFFORT_NM = 2.0" in source
     assert "def spoon_side_closed" in source
+    # The hold target must be pinned to the achieved position, or the jaws
+    # keep closing through the lift and eject the handle.
+    assert '"spoon_grasp_hold_pinned"' in source
+    assert "self._gripper_hold_targets[side] = finals[side]" in source
     assert "peak_efforts[side] >= SPOON_STALLED_CONTACT_EFFORT_NM" in source
     assert "all(spoon_side_closed(side) for side in sides)" in source
     assert "spoon_contact_pairs=[" in source
