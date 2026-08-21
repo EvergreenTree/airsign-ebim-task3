@@ -15,7 +15,7 @@ from typing import Any
 import cv2
 import numpy as np
 
-from .benchmark import BENCHMARK_COMMIT, validate_benchmark_revision
+from .benchmark import BENCHMARK_COMMIT, policy_source_hash, validate_benchmark_revision
 from .dashboard import start_dashboard
 from .runtime import RuntimeStore
 from .types import EpisodeTelemetry, Lifecycle, Stage, Substate
@@ -627,6 +627,7 @@ def run(args: argparse.Namespace) -> int:
     store.event(
         "scene_ready",
         benchmark_commit=BENCHMARK_COMMIT,
+        policy_source_sha256=policy_source_hash(),
         articulation_root=articulation_root,
         room_usd=str(room_path),
         robot_usd=str(robot_path),

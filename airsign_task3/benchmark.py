@@ -26,3 +26,20 @@ def validate_benchmark_revision(root: Path) -> None:
         raise RuntimeError(
             f"benchmark revision mismatch: {revision} != {BENCHMARK_COMMIT}"
         )
+
+
+def policy_source_hash() -> str:
+    """Hash the policy package source so a run identifies the code that made it.
+
+    Artifacts otherwise record only the benchmark revision, which does not
+    change when the policy does. Every ``.py`` in the package is hashed in path
+    order, so the digest covers the whole behaviour tree and actuator.
+    """
+    import hashlib
+
+    root = Path(__file__).parent
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*.py")):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
