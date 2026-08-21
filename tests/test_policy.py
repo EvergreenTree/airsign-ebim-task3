@@ -815,3 +815,20 @@ def test_dining_pickups_use_a_reachable_pregrasp_standoff() -> None:
     for primitive in build_cleanup_plan():
         if primitive.label.startswith("pregrasp cleanup "):
             assert primitive.offset_xyz == (0.0, 0.0, 0.09)
+
+
+def test_cleanup_transit_posture_does_not_drop_a_held_object() -> None:
+    """Stage 4 must not lose an object it has already grasped and lifted.
+
+    seed-1-20260822T002705 grasped, lifted and retracted the cleanup bowl
+    three times and dropped it at the stow each time.
+    """
+    plan = build_cleanup_plan()
+    stows = [p for p in plan if p.label.startswith("stow loaded cleanup ")]
+    assert len(stows) == 4
+    for primitive in stows:
+        assert primitive.metadata["best_effort"] is True
+    # The contact chain itself stays strict.
+    for primitive in plan:
+        if primitive.label.startswith(("grasp cleanup ", "approach cleanup ")):
+            assert "best_effort" not in primitive.metadata

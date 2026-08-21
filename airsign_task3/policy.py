@@ -501,9 +501,18 @@ def build_cleanup_plan() -> list[Primitive]:
                 Primitive(PrimitiveKind.MOVE_TCP, f"retract cleanup {object_name}",
                           target=object_name, arm=Arm.RIGHT,
                           offset_xyz=(0.0, 0.0, 0.02), orientation_hint=f"carry_{object_name}"),
+                # Same posture-move hazard as the Stage 1 spoon: failing this
+                # counted as a contact-chain failure, which opened the jaws and
+                # replayed pregrasp/approach/grasp. In
+                # seed-1-20260822T002705 the cleanup bowl was grasped, lifted
+                # and retracted cleanly three times and dropped at the stow
+                # every time, so Stage 4 never scored a point on an object the
+                # robot was physically holding. The transit posture is not a
+                # task requirement; carrying a little wider is.
                 Primitive(PrimitiveKind.MOVE_TCP, f"stow loaded cleanup {object_name}",
                           target=object_name, arm=Arm.RIGHT,
-                          orientation_hint="loaded_transit_stow"),
+                          orientation_hint="loaded_transit_stow",
+                          metadata={"best_effort": True}),
                 Primitive(
                     PrimitiveKind.NAVIGATE,
                     f"carry cleanup {object_name} to sink",
