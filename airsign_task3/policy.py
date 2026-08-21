@@ -264,6 +264,7 @@ def build_feeding_plan() -> list[Primitive]:
             metadata={
                 "timeout_s": 180.0,
                 "dining_station": True,
+                "nearby_station_acceptance_m": 0.75,
             },
         ),
         Primitive(PrimitiveKind.MOVE_TCP, "right spoon pregrasp", target="spoon", arm=Arm.RIGHT,
@@ -311,11 +312,14 @@ def build_feeding_plan() -> list[Primitive]:
 
 def build_bean_recovery_plan() -> list[Primitive]:
     return [
-        # Take the full dining-station approach, including the 0.28 m final
-        # advance. Skipping it left the base at the corridor standoff, where
-        # the right arm stalls 0.16 m short of the bowl pregrasp pose at its
-        # reach limit (run seed-0-20260821T225102). Stage 1 places into this
-        # same seat with the full approach and reaches it.
+        # Accept the station the robot is already standing at, but still make
+        # the 0.28 m final advance -- the actuator now advances on the nearby
+        # path too. Without the advance the right arm stalls 0.16 m short of
+        # the bowl pregrasp pose at its reach limit
+        # (seed-0-20260821T225102); without the nearby acceptance the full
+        # re-route from the head seat timed out on all six attempts
+        # (seed-1-20260821T232050). Stage 1 reaches this same seat because its
+        # carry navigation ends with that advance.
         Primitive(
             PrimitiveKind.NAVIGATE,
             "navigate to recovery bowl",
@@ -323,6 +327,7 @@ def build_bean_recovery_plan() -> list[Primitive]:
             metadata={
                 "timeout_s": 180.0,
                 "dining_station": True,
+                "nearby_station_acceptance_m": 0.75,
             },
         ),
         Primitive(

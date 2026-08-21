@@ -214,15 +214,18 @@ def test_feeding_reuses_the_reachable_spoon_placement_station() -> None:
         if item.label == "navigate to head-adjacent seat"
     )
     assert navigation.metadata["dining_station"] is True
+    # No dining_final_advance key means the actuator default, True: the base
+    # accepts the station it already stands at and still makes the final
+    # approach that puts the seat inside the right arm's envelope.
     assert "dining_final_advance" not in navigation.metadata
-    assert "nearby_station_acceptance_m" not in navigation.metadata
+    assert navigation.metadata["nearby_station_acceptance_m"] == 0.75
 
 
 def test_recovery_preserves_the_positioning_pour_before_sink_release() -> None:
     plan = build_bean_recovery_plan()
     navigation = next(item for item in plan if item.label == "navigate to recovery bowl")
     assert "dining_final_advance" not in navigation.metadata
-    assert "nearby_station_acceptance_m" not in navigation.metadata
+    assert navigation.metadata["nearby_station_acceptance_m"] == 0.75
     carry = next(item for item in plan if item.label == "carry bowl to recycling")
     assert carry.metadata["retreat_from_station"] == "head_seat"
     assert carry.metadata["source_station_clearance_m"] == 0.90

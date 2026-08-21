@@ -1132,6 +1132,13 @@ class IsaacPhysicalActuator(PhysicalActuator):
                 limits,
                 yaw_tolerance_rad=manipulation_yaw_tolerance_rad,
             )
+            # Accepting the nearby station skipped the final approach, so the
+            # base stayed a standoff away and the arm stalled at its reach
+            # limit. Orienting in place and then advancing is the same
+            # geometry a full station approach ends with, without the long
+            # re-route that timed out six times in seed-1-20260821T232050.
+            if oriented and dining_final_advance:
+                oriented = self._advance_dining_station(target, limits)
             self.navigation_failures[target_name] = 0 if oriented else attempt + 1
             return oriented
         base_clearance = (

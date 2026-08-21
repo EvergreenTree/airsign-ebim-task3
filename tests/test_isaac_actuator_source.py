@@ -777,6 +777,7 @@ def test_supply_navigation_preserves_clearance_and_physically_holds_base() -> No
     assert '"dining_station_final_advance_skipped"' in source
     assert 'primitive.metadata.get("dining_final_advance", True)' in source
     assert 'primitive.metadata["nearby_station_acceptance_m"]' in source
+    assert "if oriented and dining_final_advance:" in source
     assert 'primitive.metadata.get("hold_current_position")' in source
     assert '"recovery_payload_released"' in source
     assert '"recovery_payload_unmet"' in source
