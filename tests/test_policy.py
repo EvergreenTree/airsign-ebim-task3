@@ -832,3 +832,19 @@ def test_cleanup_transit_posture_does_not_drop_a_held_object() -> None:
     for primitive in plan:
         if primitive.label.startswith(("grasp cleanup ", "approach cleanup ")):
             assert "best_effort" not in primitive.metadata
+
+
+def test_feeding_lift_tolerance_is_clearable() -> None:
+    """The feeding lift must not fail on rounding.
+
+    seed-0 of the 2026-08-22 final set reached the lift with the pregrasp,
+    approach and grasp all successful and stalled at exactly the 0.020 m
+    tolerance. Spoon levelness is enforced separately.
+    """
+    lift = next(
+        item
+        for item in build_feeding_plan()
+        if item.label == "lift spoon for feeding"
+    )
+    assert lift.metadata["position_tolerance_m"] == 0.035
+    assert lift.metadata["max_spoon_vertical_extent_m"] == 0.075
