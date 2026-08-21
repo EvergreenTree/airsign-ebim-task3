@@ -126,6 +126,40 @@ report, navigation decision and score update. `summary.json` holds the final
 telemetry snapshot, and `scripts/summarize_runs.py` prints the stage table for
 one or more run directories.
 
+## Measured results
+
+Three clean-reset runs, seeds 0/1/2, policy source
+`0739527e2fca6c99b80b82c5d1d5f94886828b7645c5fbcb16c9d4c96e9ea310`, benchmark
+`e36119cc`. Every run is included; none were dropped for being weak.
+
+| Run | Stage 1 | Stage 2 | Stage 3 | Stage 4 | Total | Lifecycle |
+|---|---:|---:|---:|---:|---:|---|
+| seed 0 | 3.00 | 0.00 | 2.37 | 1.00 | 6.37 | COMPLETE |
+| seed 1 | 1.00 | 0.00 | 0.00 | 0.00 | 1.00 | COMPLETE |
+| seed 2 | 2.00 | 0.00 | 1.67 | 1.00 | 4.67 | COMPLETE |
+| **mean** | **2.00** | **0.00** | **1.35** | **0.67** | **4.01** | |
+
+All three terminated autonomously, with no safety-watchdog intervention and no
+emergency stop. Highest completed stage is 0 in every run: Stage 1 needs all
+four objects and the plate is not attempted, Stage 2 does not complete, and
+Stage 3 is scored proportionally rather than completed.
+
+**Variance is wide, and the mean should be read with that in mind.** Totals
+span 1.00 to 6.37 across these three runs. Isaac's GPU physics with 300
+dynamic beans is not bit-reproducible, so repeated runs at one seed diverge:
+an earlier attempt at seed 1 had reached Stage 1 3.00 before the simulator
+crashed, against 1.00 here. A three-run mean over a policy this variable
+carries real uncertainty, and 4.01 is not a stable expectation.
+
+Reproduce a table like this one with:
+
+```bash
+python3 scripts/summarize_runs.py <run-dir> [<run-dir> ...]
+```
+
+It prints the shared policy source hash when every run agrees and warns when
+they do not, so a mean cannot silently mix code versions.
+
 ## Status and known limitations
 
 Measured behaviour, not intent. Every claim here comes from a run whose
@@ -156,6 +190,13 @@ recovery ratio stays at zero and the stage is deferred.
 so a failure costs one point rather than the stage. Objects at a reachable
 seat are grasped, lifted and carried; some seat geometries leave the pregrasp
 outside the arm's envelope in the same way Stage 3 does.
+
+**The simulator crashed once in 33 launches.** A run died with a segmentation
+fault inside Isaac Sim's own renderer plugin (`libomni.kit.renderer.plugin.so`)
+part-way through an episode, writing no summary. It happened while three Isaac
+instances shared one GPU, which the single-container evaluation path does not
+do, but it is a real observed failure rather than a hypothetical one. `run.sh`
+propagates the exit status rather than masking it.
 
 **The container has not been built.** Neither machine available for this work
 has a container runtime, so the image itself is unbuilt and untested. What was
