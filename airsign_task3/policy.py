@@ -790,7 +790,17 @@ class HierarchicalPolicyRunner:
             )
             if defer_scope_reason:
                 setattr(self.actuator, "defer_scope_reason", None)
-                return self._defer_current_scope(primitive)
+                # best_effort states that failing this primitive must not cost
+                # the scope, so it has to outrank the actuator asking for the
+                # scope to be dropped. Checking the request first made the
+                # marking useless on exactly the primitives it was added for:
+                # seed-2 of the 2026-08-22 final set deferred
+                # `stow loaded spoon for carry` through this branch and lost
+                # the spoon it was holding, taking Stage 1's third point and
+                # all of Stage 2 with it. Genuine hazards are handled above by
+                # unrecoverable_failure_reason.
+                if not primitive.metadata.get("best_effort"):
+                    return self._defer_current_scope(primitive)
         if primitive.metadata.get("skip_scope_on_success"):
             if ok:
                 self.primitive_index = self._scope_end(self.primitive_index)

@@ -848,3 +848,38 @@ def test_feeding_lift_tolerance_is_clearable() -> None:
     )
     assert lift.metadata["position_tolerance_m"] == 0.035
     assert lift.metadata["max_spoon_vertical_extent_m"] == 0.075
+
+
+def test_best_effort_outranks_an_actuator_scope_deferral_request() -> None:
+    """A best-effort posture move must not lose the scope to defer_scope_reason.
+
+    seed-2 of the 2026-08-22 final set deferred `stow loaded spoon for carry`
+    through that branch and dropped the spoon it was holding.
+    """
+    actuator = FakeActuator(failures=1)
+    runner = HierarchicalPolicyRunner(actuator)
+    runner.primitive_index = next(
+        index
+        for index, primitive in enumerate(runner.stage_plans[Stage.TABLE_SETUP])
+        if primitive.label == "stow loaded spoon for carry"
+    )
+    actuator.defer_scope_reason = "actuator asked to drop the scope"
+    ok, message = runner.tick()
+    assert ok
+    assert message == "best effort unmet: stow loaded spoon for carry"
+    assert runner.deferred_failures == []
+    assert not actuator.stops
+
+
+def test_a_scope_deferral_request_still_applies_to_strict_primitives() -> None:
+    actuator = FakeActuator(failures=1)
+    runner = HierarchicalPolicyRunner(actuator)
+    runner.primitive_index = next(
+        index
+        for index, primitive in enumerate(runner.stage_plans[Stage.TABLE_SETUP])
+        if primitive.label == "grasp bowl"
+    )
+    actuator.defer_scope_reason = "actuator asked to drop the scope"
+    ok, message = runner.tick()
+    assert ok
+    assert "deferred TABLE_SETUP:grasp bowl" in message
