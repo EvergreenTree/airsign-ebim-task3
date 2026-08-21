@@ -763,6 +763,10 @@ def test_supply_navigation_preserves_clearance_and_physically_holds_base() -> No
     assert "DINING_STATION_FINAL_SPEED_MPS = 0.03" in source
     assert "DINING_STATION_FINAL_TIMEOUT_S = 32.0" in source
     assert "def _advance_dining_station" in source
+    # A base pressed against the table cannot advance; that is not a
+    # navigation failure if the station is inside the required reach.
+    assert "blocked_but_usable" in source
+    assert "return actual >= 0.08 or blocked_but_usable" in source
     assert "dining_station: bool | None = False" in source
     # None means "resolve from where the object is", so a cleanup pickup
     # on the kitchen supply table uses supply geometry, not dining.

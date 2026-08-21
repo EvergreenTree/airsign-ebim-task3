@@ -1895,14 +1895,30 @@ class IsaacPhysicalActuator(PhysicalActuator):
         final_position, _ = self.robot.get_world_pose()
         final_xy = np.asarray(final_position[:2], dtype=float)
         actual = float(np.dot(final_xy - start_xy, direction))
+        final_distance = float(
+            np.linalg.norm(final_xy - np.asarray(target, dtype=float))
+        )
+        # The advance improves reach; it is not a precondition for working at
+        # the station. A base already pressed against the table cannot move,
+        # and reporting that as a navigation failure cost seed-0 all of Stage 2
+        # on 2026-08-22: the station was accepted at 0.667 m, the advance moved
+        # 31 mm and then 4 mm, and seven attempts were spent re-deciding that
+        # the robot could not get closer to a seat it had just placed the spoon
+        # on. Accept the station whenever it is inside the reach the router
+        # already required of it, and let the arm succeed or fail on its own.
+        blocked_but_usable = (
+            final_distance <= BASE_MAX_DINING_MANIPULATION_REACH_M
+        )
         self.store.event(
             "dining_station_advance_incomplete",
             start=start_xy.tolist(),
             end=final_xy.tolist(),
             requested_distance_m=DINING_STATION_FINAL_ADVANCE_M,
             actual_distance_m=actual,
+            final_distance_to_target_m=final_distance,
+            accepted=bool(actual >= 0.08 or blocked_but_usable),
         )
-        return actual >= 0.08
+        return actual >= 0.08 or blocked_but_usable
 
     def _withdraw_base(
         self,
