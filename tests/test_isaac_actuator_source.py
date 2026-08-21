@@ -759,7 +759,10 @@ def test_supply_navigation_preserves_clearance_and_physically_holds_base() -> No
     assert "DINING_STATION_FINAL_SPEED_MPS = 0.03" in source
     assert "DINING_STATION_FINAL_TIMEOUT_S = 32.0" in source
     assert "def _advance_dining_station" in source
-    assert "dining_station: bool = False" in source
+    assert "dining_station: bool | None = False" in source
+    # None means "resolve from where the object is", so a cleanup pickup
+    # on the kitchen supply table uses supply geometry, not dining.
+    assert "dining_station = portal is not None and float(target[1]) > float(portal[2])" in source
     assert "dining_station = loaded_station or dining_station" in source
     assert 'primitive.metadata.get("dining_station", False)' in source
     assert 'primitive.metadata.get(\n                                "position_tolerance_m"' in source

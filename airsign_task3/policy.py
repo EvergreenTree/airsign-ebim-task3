@@ -459,8 +459,12 @@ def build_cleanup_plan() -> list[Primitive]:
                 Primitive(PrimitiveKind.NAVIGATE, f"navigate to cleanup {object_name}",
                           target=object_name,
                           metadata={
+                              # Resolve the station from where the object
+                              # actually is: a deferred Stage 1 object is still
+                              # on the kitchen supply table, and dining
+                              # geometry parks the base too far to lift it.
                               "timeout_s": 180.0,
-                              "dining_station": True,
+                              "dining_station": "auto",
                               "manipulation_yaw_tolerance_deg": 15.0,
                           }),
                 Primitive(PrimitiveKind.MOVE_TCP, f"pregrasp cleanup {object_name}",

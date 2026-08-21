@@ -193,8 +193,10 @@ def test_recovery_and_cleanup_pickups_use_dining_station_approach() -> None:
         if primitive.label.startswith("navigate to cleanup ")
     ]
     assert len(cleanup_navigations) == 4
+    # Cleanup resolves the station from the object's live position: an object
+    # deferred in Stage 1 is still on the kitchen supply table.
     assert all(
-        primitive.metadata["dining_station"] is True
+        primitive.metadata["dining_station"] == "auto"
         for primitive in cleanup_navigations
     )
     assert all(

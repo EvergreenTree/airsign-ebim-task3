@@ -1100,7 +1100,7 @@ class IsaacPhysicalActuator(PhysicalActuator):
         limits: SafetyLimits,
         *,
         carried_objects: tuple[str, ...] = (),
-        dining_station: bool = False,
+        dining_station: bool | None = False,
         dining_final_advance: bool = True,
         nearby_station_acceptance_m: float | None = None,
         manipulation_yaw_tolerance_rad: float | None = None,
@@ -1111,6 +1111,23 @@ class IsaacPhysicalActuator(PhysicalActuator):
         portal = self._room_portal(float(target[0]))
         attempt = self.navigation_failures.get(target_name, 0)
         loaded_station = target_name.endswith("_seat")
+        if dining_station is None:
+            # Cleanup fetches an object from wherever it actually ended up. A
+            # deferred Stage 1 object is still on the kitchen supply table, and
+            # approaching it with dining geometry parks the base at the 0.60 m
+            # dining standoff -- with candidates admitted out to 1.10 m --
+            # instead of the 0.42 m supply standoff Stage 1 reaches from. In
+            # seed-1-20260821T232050 the cleanup spoon was grasped three times
+            # at x=-5.12, in the kitchen, and the lift failed every time.
+            # The rooms are split by the divider's y extent.
+            dining_station = portal is not None and float(target[1]) > float(portal[2])
+            self.store.event(
+                "station_kind_resolved",
+                target=target_name,
+                target_position=target.tolist(),
+                dining_station=bool(dining_station),
+                divider_max_y=None if portal is None else float(portal[2]),
+            )
         dining_station = loaded_station or dining_station
         loaded_navigation = bool(carried_objects)
         if (
@@ -3767,7 +3784,11 @@ class IsaacPhysicalActuator(PhysicalActuator):
             target,
             limits,
             carried_objects=tuple(primitive.metadata.get("carried_objects", ())),
-            dining_station=bool(primitive.metadata.get("dining_station", False)),
+            dining_station=(
+                None
+                if primitive.metadata.get("dining_station") == "auto"
+                else bool(primitive.metadata.get("dining_station", False))
+            ),
             dining_final_advance=bool(
                 primitive.metadata.get("dining_final_advance", True)
             ),
