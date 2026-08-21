@@ -7,12 +7,22 @@ set -euo pipefail
 # of that proxy process.
 unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 
-ROOT="/mnt/nas/evergreen/ebim-task3"
-OSS_ROOT="/mnt/oss/evergreen/ebim-task3"
+ROOT="${AIRSIGN_TASK3_ROOT:-/mnt/nas/evergreen/ebim-task3}"
 BENCHMARK_COMMIT="e36119cc43e949dc6269bfe5c1e7f613f9f24d0c"
 
+# Package index. The default is PyPI so this bootstrap works anywhere; the
+# development host overrides it with a local mirror because it is far faster
+# from there. NVIDIA's index is always needed for the Isaac Sim wheels.
+PYPI_INDEX="${AIRSIGN_TASK3_PYPI_INDEX:-https://pypi.org/simple}"
+NVIDIA_INDEX="${AIRSIGN_TASK3_NVIDIA_INDEX:-https://pypi.nvidia.com}"
+
+# Artifact mirroring is optional and off unless a destination is given.
+OSS_ROOT="${AIRSIGN_TASK3_OSS_ROOT:-}"
+
 mkdir -p "$ROOT"/{artifacts,cache,logs,runs,tools/bin,workspace}
-mkdir -p "$OSS_ROOT"/{artifacts,logs,runs}
+if [[ -n "$OSS_ROOT" ]]; then
+  mkdir -p "$OSS_ROOT"/{artifacts,logs,runs}
+fi
 
 # DSW's NVIDIA driver is injected as read-only files.  The minimal host image
 # does not include the generic loader libraries that native Isaac/Kit needs.
@@ -98,12 +108,12 @@ if [[ ! -x "$ROOT/.venv/bin/python" ]]; then
 fi
 
 "$UV" pip install --python "$ROOT/.venv/bin/python" \
-  --default-index https://mirrors.aliyun.com/pypi/simple \
-  --index https://pypi.nvidia.com \
+  --default-index "$PYPI_INDEX" \
+  --index "$NVIDIA_INDEX" \
   "isaacsim[all,extscache]==5.1.0"
 
 "$UV" pip install --python "$ROOT/.venv/bin/python" \
-  --default-index https://mirrors.aliyun.com/pypi/simple \
+  --default-index "$PYPI_INDEX" \
   -r "$ROOT/workspace/requirements-runtime.txt"
 
 "$ROOT/.venv/bin/python" - <<'PY'
