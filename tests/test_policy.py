@@ -202,7 +202,7 @@ def test_recovery_and_cleanup_pickups_use_dining_station_approach() -> None:
         for primitive in cleanup_navigations
     )
     assert all(
-        primitive.metadata["dining_final_advance"] is False
+        "dining_final_advance" not in primitive.metadata
         for primitive in cleanup_navigations
     )
 
@@ -214,15 +214,15 @@ def test_feeding_reuses_the_reachable_spoon_placement_station() -> None:
         if item.label == "navigate to head-adjacent seat"
     )
     assert navigation.metadata["dining_station"] is True
-    assert navigation.metadata["dining_final_advance"] is False
-    assert navigation.metadata["nearby_station_acceptance_m"] == 0.75
+    assert "dining_final_advance" not in navigation.metadata
+    assert "nearby_station_acceptance_m" not in navigation.metadata
 
 
 def test_recovery_preserves_the_positioning_pour_before_sink_release() -> None:
     plan = build_bean_recovery_plan()
     navigation = next(item for item in plan if item.label == "navigate to recovery bowl")
-    assert navigation.metadata["dining_final_advance"] is False
-    assert navigation.metadata["nearby_station_acceptance_m"] == 0.75
+    assert "dining_final_advance" not in navigation.metadata
+    assert "nearby_station_acceptance_m" not in navigation.metadata
     carry = next(item for item in plan if item.label == "carry bowl to recycling")
     assert carry.metadata["retreat_from_station"] == "head_seat"
     assert carry.metadata["source_station_clearance_m"] == 0.90

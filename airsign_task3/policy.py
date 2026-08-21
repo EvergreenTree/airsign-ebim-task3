@@ -252,8 +252,6 @@ def build_feeding_plan() -> list[Primitive]:
             metadata={
                 "timeout_s": 180.0,
                 "dining_station": True,
-                "dining_final_advance": False,
-                "nearby_station_acceptance_m": 0.75,
             },
         ),
         Primitive(PrimitiveKind.MOVE_TCP, "right spoon pregrasp", target="spoon", arm=Arm.RIGHT,
@@ -301,6 +299,11 @@ def build_feeding_plan() -> list[Primitive]:
 
 def build_bean_recovery_plan() -> list[Primitive]:
     return [
+        # Take the full dining-station approach, including the 0.28 m final
+        # advance. Skipping it left the base at the corridor standoff, where
+        # the right arm stalls 0.16 m short of the bowl pregrasp pose at its
+        # reach limit (run seed-0-20260821T225102). Stage 1 places into this
+        # same seat with the full approach and reaches it.
         Primitive(
             PrimitiveKind.NAVIGATE,
             "navigate to recovery bowl",
@@ -308,8 +311,6 @@ def build_bean_recovery_plan() -> list[Primitive]:
             metadata={
                 "timeout_s": 180.0,
                 "dining_station": True,
-                "dining_final_advance": False,
-                "nearby_station_acceptance_m": 0.75,
             },
         ),
         Primitive(
@@ -443,7 +444,6 @@ def build_cleanup_plan() -> list[Primitive]:
                           metadata={
                               "timeout_s": 180.0,
                               "dining_station": True,
-                              "dining_final_advance": False,
                               "manipulation_yaw_tolerance_deg": 15.0,
                           }),
                 Primitive(PrimitiveKind.MOVE_TCP, f"pregrasp cleanup {object_name}",
