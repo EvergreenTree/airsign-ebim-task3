@@ -86,6 +86,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--preview-only", action="store_true")
     parser.add_argument("--wait-for-start", action="store_true")
     parser.add_argument("--pose-scan", action="store_true")
+    # Evidence capture -- three camera read-backs every fourth step plus MP4
+    # encoding -- is pure overhead for scoring, because the policy reads
+    # ground-truth poses rather than pixels. Turning it off leaves physics
+    # stepping and control cadence untouched and is for exploratory sweeps
+    # only; an acceptance run must keep the default so it produces evidence.
+    parser.add_argument(
+        "--evidence",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Capture camera streams and evidence.mp4 (default: on).",
+    )
     parser.add_argument(
         "--development-table-object",
         choices=("plate", "cup", "bowl", "spoon"),
@@ -562,13 +573,13 @@ def run(args: argparse.Namespace) -> int:
         frame = np.zeros((540, 960, 3), dtype=np.uint8)
     store.set_frame("overview", frame)
     video_path = run_dir / "evidence.mp4"
-    video_writer = cv2.VideoWriter(
+    video_writer = None if not args.evidence else cv2.VideoWriter(
         str(video_path),
         cv2.VideoWriter_fourcc(*"mp4v"),
         max(1.0, float(args.render_hz) / 4.0),
         (960, 540),
     )
-    if not video_writer.isOpened():
+    if video_writer is not None and not video_writer.isOpened():
         video_writer.release()
         video_writer = None
 
@@ -668,6 +679,8 @@ def run(args: argparse.Namespace) -> int:
     )
 
     def refresh_overview() -> None:
+        if not args.evidence:
+            return
         current = _read_annotator_frame(annotator)
         if current is not None:
             record_overview(current)
@@ -846,7 +859,7 @@ def run(args: argparse.Namespace) -> int:
                     )
                     stopping = True
         world.step(render=True)
-        if world.current_time_step_index % 4 == 0:
+        if args.evidence and world.current_time_step_index % 4 == 0:
             frame = _read_annotator_frame(annotator)
             if frame is not None:
                 record_overview(frame)
