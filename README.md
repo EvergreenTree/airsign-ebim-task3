@@ -128,31 +128,37 @@ one or more run directories.
 
 ## Measured results
 
-Three clean-reset runs, seeds 0/1/2, policy source
-`93ff50cd8314f7e2c9b5d1cb8dc16cbaa7a00920f98508b7dd40248dac654bc2`, benchmark
-`e36119cc`. Every run is included; none were dropped for being weak, and this
-is the code in this repository rather than a better-scoring earlier revision.
+Sixteen clean-reset runs, seeds 0-15, policy source
+`22d54638d205833468acc9d713da2a3461bfecdce08879ed42727c1f7d0d28c5`, benchmark
+`e36119cc`. Thirteen had finished at the time of writing and all thirteen are
+included; none were dropped for being weak.
 
-| Run | Stage 1 | Stage 2 | Stage 3 | Stage 4 | Total | Lifecycle |
-|---|---:|---:|---:|---:|---:|---|
-| seed 0 | 3.00 | 0.00 | 1.89 | 1.00 | 5.89 | COMPLETE |
-| seed 1 | 3.00 | 0.00 | 0.00 | 0.00 | 3.00 | COMPLETE |
-| seed 2 | 2.00 | 0.00 | 0.00 | 0.00 | 2.00 | COMPLETE |
-| **mean** | **2.67** | **0.00** | **0.63** | **0.33** | **3.63** | |
+| Stage | Mean | of |
+|---|---:|---:|
+| 1 Table setup | 1.38 | 4 |
+| 2 Feeding | 0.00 | 4 |
+| 3 Bean recovery | 0.29 | 4 |
+| 4 Cleanup | 0.15 | 4 |
+| **Total** | **1.83** | **16** |
 
-All three terminated autonomously, with no safety-watchdog intervention and no
-emergency stop. Highest completed stage is 0 in every run: Stage 1 needs all
-four objects and the plate is not attempted, Stage 2 does not complete, and
-Stage 3 is scored proportionally rather than completed.
+Per run: 2.00, 4.87, 1.00, 1.00, 1.00, 0.00, 1.00, 3.00, 1.00, 1.00, 1.00,
+5.91, 1.00. Every run terminated autonomously, with no safety-watchdog
+intervention and no emergency stop. Highest completed stage is 0 throughout:
+Stage 1 needs all four objects and the plate is not attempted, Stage 2 does not
+complete, and Stage 3 is scored proportionally rather than completed.
 
-**Read the spread, not the mean.** Across eleven runs of the last few policy
-revisions, totals ranged from 1.00 to 6.37 with no change to the code between
-several of them. Isaac's GPU physics with 300 dynamic beans is not
-bit-reproducible, so the same seed diverges between runs: seed 1 has produced
-1.00, 3.00 and a Stage 1 of 3.00 on separate attempts. A three-run mean over a
-policy this variable is a noisy estimate, and 3.63 should be read as "usually
-somewhere between 2 and 6", not as an expected value. A wider five-seed sample
-of the previous revision gave 4.64, 2.00, 2.00, 1.00 and 5.85.
+**The distribution matters more than the mean, and it is bimodal.** Most seeds
+score exactly 1.00 -- the bowl is placed and nothing else lands -- while two
+outliers at 4.87 and 5.91 carry most of the total. The policy is not a 1.83
+machine; it is mostly a 1.00 machine that occasionally reaches 6.
+
+**An earlier revision of this file reported 3.63 from three runs on seeds 0, 1
+and 2.** That figure was measured honestly but the sample was not
+representative: those three seats happen to suit the right arm's working
+envelope, and a wider sweep puts the same policy at roughly half that. Seed
+choice, not code, accounted for the difference. Treat any small-sample number
+here -- including this one -- as an estimate with wide error bars, and prefer
+the per-run list above to any single figure.
 
 Reproduce a table like this one with:
 
