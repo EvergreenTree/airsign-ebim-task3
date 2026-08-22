@@ -142,7 +142,13 @@ PLATE_LULA_INWARD_OFFSET_M = 0.007
 PLATE_GRASP_LATERAL_BIAS_M = 0.003
 # This gate advances to force-observed closure; it does not declare a grasp.
 # Contact and transport still require gripper effort/stall and object lift.
-PLATE_CONTACT_REACH_TOLERANCE_M = 0.055
+# The plate approach is the last step before the grasp and it was failing by
+# millimetres: 0.058, 0.056, 0.065 and 0.057 m against 0.055 in seed 10 of
+# the 2026-08-22 plate batch, with navigate, pregrasp and preshape all
+# succeeding. A plate is a wide flat disc, so a few centimetres off centre
+# is still well inside the rim -- unlike the spoon's thin handle, which
+# keeps its tight tolerance.
+PLATE_CONTACT_REACH_TOLERANCE_M = 0.075
 # Cup, bowl, and spoon rigid-body origins are authored near their support
 # surfaces rather than at the upper grasp surface.  Place the Lula TCP just
 # above the live top bound so the downward fingers straddle the object without

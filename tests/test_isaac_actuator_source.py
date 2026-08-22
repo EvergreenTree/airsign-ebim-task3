@@ -351,7 +351,7 @@ def test_plate_contact_uses_named_reach_gate_before_physical_verification() -> N
     source = source_path.read_text(encoding="utf-8")
     excerpt = source[source.index("final_tolerance_m=") : source.index("final_tolerance_m=") + 1200]
     assert "PLATE_CONTACT_REACH_TOLERANCE_M" in excerpt
-    assert "PLATE_CONTACT_REACH_TOLERANCE_M = 0.055" in source
+    assert "PLATE_CONTACT_REACH_TOLERANCE_M = 0.075" in source
     assert "clearance_final_vertical_tolerance_m" in source
     assert "0.055" in source
     assert "lift_transport_verification" in source
