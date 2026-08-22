@@ -990,9 +990,25 @@ def test_a_blocked_plan_gives_ground_instead_of_demanding_more() -> None:
     source = (
         Path(__file__).parents[1] / "airsign_task3" / "isaac_actuator.py"
     ).read_text(encoding="utf-8")
-    assert "BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.02" in source
+    assert "BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.04" in source
     assert "self.navigation_plan_failures[target_name] = (" in source
     # Relief is floored at the clearance the unloaded base already uses.
     assert "clearance = max(\n            BASE_FOOTPRINT_CLEARANCE_M," in source
     # A stall or contact still escalates.
     assert "base_clearance + attempt * BASE_RETRY_CLEARANCE_STEP_M," in source
+
+
+def test_a_mostly_complete_withdraw_counts_as_clear() -> None:
+    """A withdraw exists to clear the loaded envelope; most of the way is out.
+
+    seed 3 of the 2026-08-22 batch achieved 0.86 m of a requested 1.00 m,
+    blocked from going further, and failed `carry cup to seat` three times.
+    """
+    source = (
+        Path(__file__).parents[1] / "airsign_task3" / "isaac_actuator.py"
+    ).read_text(encoding="utf-8")
+    assert "BASE_WITHDRAW_ACCEPT_FRACTION = 0.6" in source
+    assert "return achieved >= BASE_WITHDRAW_ACCEPT_FRACTION * distance_m" in source
+    # Relief must outpace the per-attempt escalation or clearance never falls.
+    assert "BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.04" in source
+    assert "BASE_RETRY_CLEARANCE_STEP_M = 0.01" in source

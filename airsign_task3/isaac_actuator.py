@@ -45,7 +45,14 @@ MAX_WHEEL_SPEED_RADPS = 18.0
 BASE_FOOTPRINT_CLEARANCE_M = 0.38
 BASE_LOADED_FOOTPRINT_CLEARANCE_M = 0.52
 BASE_RETRY_CLEARANCE_STEP_M = 0.01
-BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.02
+# Must outpace BASE_RETRY_CLEARANCE_STEP_M, or the per-attempt escalation
+# cancels the relief and clearance never actually falls: seed 3 sat at
+# 0.540 m across both of its planning failures.
+BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.04
+# A withdraw exists to clear the loaded envelope before replanning. Most
+# of the way out is out; seed 3 achieved 0.86 m of a requested 1.00 m,
+# blocked from going further, and failed the carry three times for it.
+BASE_WITHDRAW_ACCEPT_FRACTION = 0.6
 BASE_MAX_CLEARANCE_M = 0.56
 # The static dining-table envelope ends near y=1.54. A 10 cm mathematical
 # egress margin left the articulated footprint touching it at y~=1.08; use the
@@ -2025,13 +2032,21 @@ class IsaacPhysicalActuator(PhysicalActuator):
             self._step()
         self._stop_base()
         final_position, _ = self.robot.get_world_pose()
+        achieved = float(
+            np.dot(
+                np.asarray(final_position[:2], dtype=float) - start_xy,
+                direction,
+            )
+        )
         self.store.event(
             "base_withdraw_incomplete",
             start=start_xy.tolist(),
             end=np.asarray(final_position[:2], dtype=float).tolist(),
             requested_distance_m=distance_m,
+            actual_distance_m=achieved,
+            accepted=bool(achieved >= BASE_WITHDRAW_ACCEPT_FRACTION * distance_m),
         )
-        return False
+        return achieved >= BASE_WITHDRAW_ACCEPT_FRACTION * distance_m
 
     def _loaded_station_withdraw_distance(
         self,
