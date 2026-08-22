@@ -209,6 +209,12 @@ def test_recovery_and_cleanup_pickups_use_dining_station_approach() -> None:
         primitive.metadata["nearby_station_acceptance_m"] == 0.75
         for primitive in cleanup_navigations
     )
+    # Kitchen-resident objects need the final approach too, and that is gated
+    # on dining_station unless the primitive asks for it explicitly.
+    assert all(
+        primitive.metadata["station_final_advance"] is True
+        for primitive in cleanup_navigations
+    )
     assert all(
         "dining_final_advance" not in primitive.metadata
         for primitive in cleanup_navigations

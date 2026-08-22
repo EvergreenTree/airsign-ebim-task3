@@ -58,7 +58,13 @@ BASE_CLEARANCE_EGRESS_MARGIN_M = 0.22
 # after a successful cup placement.
 BASE_CLEARANCE_EGRESS_ACCEPTANCE_M = 0.16
 BASE_STATION_STANDOFF_M = 0.42
-BASE_MAX_SUPPLY_MANIPULATION_REACH_M = 0.75
+# Raised from 0.75: cleanup fetches objects left on the kitchen supply
+# table, and every goal candidate there sat at 0.820 m, so route planning
+# rejected all of them and the navigation failed outright -- 17 times
+# across seeds 0/1/2 on b86d37b5. Routes are ranked by smallest reach, so
+# admitting farther candidates only matters when nothing closer is
+# feasible; the station approach below then closes the gap.
+BASE_MAX_SUPPLY_MANIPULATION_REACH_M = 0.95
 BASE_SUPPLY_STATION_ACCEPTANCE_M = 0.06
 DINING_STATION_STANDOFF_M = 0.60
 COUNTER_STATION_STANDOFF_M = 0.60
@@ -1109,6 +1115,7 @@ class IsaacPhysicalActuator(PhysicalActuator):
         carried_objects: tuple[str, ...] = (),
         dining_station: bool | None = False,
         dining_final_advance: bool = True,
+        station_final_advance: bool = False,
         nearby_station_acceptance_m: float | None = None,
         manipulation_yaw_tolerance_rad: float | None = None,
     ) -> bool:
@@ -1482,8 +1489,13 @@ class IsaacPhysicalActuator(PhysicalActuator):
                     ):
                         self.navigation_failures[target_name] = attempt + 1
                         return False
-                    if dining_station:
-                        if not dining_final_advance:
+                    # The short normal approach is how the base gets a target
+                    # inside the arm's envelope; nothing about it is specific to
+                    # the dining area. A cleanup pickup on the kitchen supply
+                    # table needs it just as much, and without it the base stops
+                    # at a standoff it cannot manipulate from.
+                    if dining_station or station_final_advance:
+                        if dining_station and not dining_final_advance:
                             self.store.event(
                                 "dining_station_final_advance_skipped",
                                 target=target_name,
@@ -3830,6 +3842,9 @@ class IsaacPhysicalActuator(PhysicalActuator):
             ),
             dining_final_advance=bool(
                 primitive.metadata.get("dining_final_advance", True)
+            ),
+            station_final_advance=bool(
+                primitive.metadata.get("station_final_advance", False)
             ),
             nearby_station_acceptance_m=(
                 float(primitive.metadata["nearby_station_acceptance_m"])

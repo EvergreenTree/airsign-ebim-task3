@@ -486,6 +486,10 @@ def build_cleanup_plan() -> list[Primitive]:
                               "timeout_s": 180.0,
                               "dining_station": "auto",
                               "manipulation_yaw_tolerance_deg": 15.0,
+                              # A kitchen-resident object needs the same short
+                              # normal approach a dining seat gets, or the base
+                              # stops at a standoff it cannot manipulate from.
+                              "station_final_advance": True,
                               # Cleanup starts from wherever the previous scope
                               # ended, usually already beside the table. Route
                               # planning from there found no viable candidate
