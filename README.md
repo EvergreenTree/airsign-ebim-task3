@@ -129,27 +129,30 @@ one or more run directories.
 ## Measured results
 
 Three clean-reset runs, seeds 0/1/2, policy source
-`0739527e2fca6c99b80b82c5d1d5f94886828b7645c5fbcb16c9d4c96e9ea310`, benchmark
-`e36119cc`. Every run is included; none were dropped for being weak.
+`93ff50cd8314f7e2c9b5d1cb8dc16cbaa7a00920f98508b7dd40248dac654bc2`, benchmark
+`e36119cc`. Every run is included; none were dropped for being weak, and this
+is the code in this repository rather than a better-scoring earlier revision.
 
 | Run | Stage 1 | Stage 2 | Stage 3 | Stage 4 | Total | Lifecycle |
 |---|---:|---:|---:|---:|---:|---|
-| seed 0 | 3.00 | 0.00 | 2.37 | 1.00 | 6.37 | COMPLETE |
-| seed 1 | 1.00 | 0.00 | 0.00 | 0.00 | 1.00 | COMPLETE |
-| seed 2 | 2.00 | 0.00 | 1.67 | 1.00 | 4.67 | COMPLETE |
-| **mean** | **2.00** | **0.00** | **1.35** | **0.67** | **4.01** | |
+| seed 0 | 3.00 | 0.00 | 1.89 | 1.00 | 5.89 | COMPLETE |
+| seed 1 | 3.00 | 0.00 | 0.00 | 0.00 | 3.00 | COMPLETE |
+| seed 2 | 2.00 | 0.00 | 0.00 | 0.00 | 2.00 | COMPLETE |
+| **mean** | **2.67** | **0.00** | **0.63** | **0.33** | **3.63** | |
 
 All three terminated autonomously, with no safety-watchdog intervention and no
 emergency stop. Highest completed stage is 0 in every run: Stage 1 needs all
 four objects and the plate is not attempted, Stage 2 does not complete, and
 Stage 3 is scored proportionally rather than completed.
 
-**Variance is wide, and the mean should be read with that in mind.** Totals
-span 1.00 to 6.37 across these three runs. Isaac's GPU physics with 300
-dynamic beans is not bit-reproducible, so repeated runs at one seed diverge:
-an earlier attempt at seed 1 had reached Stage 1 3.00 before the simulator
-crashed, against 1.00 here. A three-run mean over a policy this variable
-carries real uncertainty, and 4.01 is not a stable expectation.
+**Read the spread, not the mean.** Across eleven runs of the last few policy
+revisions, totals ranged from 1.00 to 6.37 with no change to the code between
+several of them. Isaac's GPU physics with 300 dynamic beans is not
+bit-reproducible, so the same seed diverges between runs: seed 1 has produced
+1.00, 3.00 and a Stage 1 of 3.00 on separate attempts. A three-run mean over a
+policy this variable is a noisy estimate, and 3.63 should be read as "usually
+somewhere between 2 and 6", not as an expected value. A wider five-seed sample
+of the previous revision gave 4.64, 2.00, 2.00, 1.00 and 5.85.
 
 Reproduce a table like this one with:
 
