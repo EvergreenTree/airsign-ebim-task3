@@ -978,3 +978,21 @@ def test_a_dropped_object_defers_its_scope_rather_than_ending_the_episode() -> N
     assert "unrecoverable_failure_reason" not in retention
     # The head-safety watchdog remains a separate, intact mechanism.
     assert "watchdog_interventions += 1" in source
+
+
+def test_a_blocked_plan_gives_ground_instead_of_demanding_more() -> None:
+    """Escalating clearance after a planning failure can only make it worse.
+
+    "blocked" means a candidate already sits inside obstacle-plus-clearance.
+    `carry cup to seat` burned all seven attempts this way on seeds 3, 4, 5, 6
+    and 8, each retry strictly tighter than the last.
+    """
+    source = (
+        Path(__file__).parents[1] / "airsign_task3" / "isaac_actuator.py"
+    ).read_text(encoding="utf-8")
+    assert "BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.02" in source
+    assert "self.navigation_plan_failures[target_name] = (" in source
+    # Relief is floored at the clearance the unloaded base already uses.
+    assert "clearance = max(\n            BASE_FOOTPRINT_CLEARANCE_M," in source
+    # A stall or contact still escalates.
+    assert "base_clearance + attempt * BASE_RETRY_CLEARANCE_STEP_M," in source

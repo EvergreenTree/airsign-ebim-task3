@@ -45,6 +45,7 @@ MAX_WHEEL_SPEED_RADPS = 18.0
 BASE_FOOTPRINT_CLEARANCE_M = 0.38
 BASE_LOADED_FOOTPRINT_CLEARANCE_M = 0.52
 BASE_RETRY_CLEARANCE_STEP_M = 0.01
+BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M = 0.02
 BASE_MAX_CLEARANCE_M = 0.56
 # The static dining-table envelope ends near y=1.54. A 10 cm mathematical
 # egress margin left the articulated footprint touching it at y~=1.08; use the
@@ -747,6 +748,9 @@ class IsaacPhysicalActuator(PhysicalActuator):
         self.base_obstacles, obstacle_details = self._build_base_obstacles()
         self.base_obstacle_details = obstacle_details
         self.navigation_failures: dict[str, int] = {}
+        # Counted separately from navigation_failures: a route that could
+        # not be planned needs less base clearance, not more.
+        self.navigation_plan_failures: dict[str, int] = {}
         self.unrecoverable_failure_reason: str | None = None
         self.defer_scope_reason: str | None = None
         self._plate_grasp_orientation: np.ndarray | None = None
@@ -1181,6 +1185,20 @@ class IsaacPhysicalActuator(PhysicalActuator):
             BASE_MAX_CLEARANCE_M,
             base_clearance + attempt * BASE_RETRY_CLEARANCE_STEP_M,
         )
+        # Escalating clearance is the right response to a stall or a contact,
+        # but it is exactly backwards after a planning failure: "blocked" means
+        # a candidate already sits inside obstacle-plus-clearance, so asking for
+        # more margin can only shrink the feasible set. `carry cup to seat`
+        # burned all seven attempts this way on every one of seeds 3, 4, 5, 6
+        # and 8, each retry strictly worse than the one before, costing the cup
+        # and cascading into the spoon. Give ground instead, never below the
+        # clearance the unloaded base already navigates with safely.
+        clearance = max(
+            BASE_FOOTPRINT_CLEARANCE_M,
+            clearance
+            - self.navigation_plan_failures.get(target_name, 0)
+            * BASE_PLAN_FAILURE_CLEARANCE_RELIEF_M,
+        )
         planning_obstacles = list(self.base_obstacles)
         try:
             planning_start = np.asarray(
@@ -1279,8 +1297,15 @@ class IsaacPhysicalActuator(PhysicalActuator):
                 }
             )
         if not routes:
+            self.navigation_plan_failures[target_name] = (
+                self.navigation_plan_failures.get(target_name, 0) + 1
+            )
             self.store.event(
-                "waypoint_planning_failed", target=target_name, errors=route_errors
+                "waypoint_planning_failed",
+                target=target_name,
+                errors=route_errors,
+                clearance_m=clearance,
+                plan_failures=self.navigation_plan_failures[target_name],
             )
             return False
         ranked_routes = sorted(routes, key=lambda item: (item[0], item[1]))
