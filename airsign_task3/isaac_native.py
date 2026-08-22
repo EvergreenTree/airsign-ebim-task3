@@ -86,6 +86,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--preview-only", action="store_true")
     parser.add_argument("--wait-for-start", action="store_true")
     parser.add_argument("--pose-scan", action="store_true")
+    # Experiment harness: end the episode once the named stage is done.
+    # A Stage 1 question resolves in the first ~700 of ~2500 simulated
+    # seconds, so a full episode wastes about 70% of its runtime answering
+    # it. Never set for an acceptance run, which must play all four stages.
+    parser.add_argument(
+        "--stop-after-stage",
+        type=int,
+        choices=(1, 2, 3),
+        default=None,
+        help="Exploratory only: finish after this stage instead of the episode.",
+    )
     # Evidence capture -- three camera read-backs every fourth step plus MP4
     # encoding -- is pure overhead for scoring, because the policy reads
     # ground-truth poses rather than pixels. Turning it off leaves physics
@@ -841,7 +852,18 @@ def run(args: argparse.Namespace) -> int:
                     highest_completed_stage=highest_completed_stage(breakdown),
                     message=message,
                 )
-                if message == "complete":
+                if (
+                    args.stop_after_stage is not None
+                    and policy_runner.stage_index >= args.stop_after_stage
+                ):
+                    store.update(lifecycle=Lifecycle.COMPLETE)
+                    store.event(
+                        "episode_truncated",
+                        after_stage=args.stop_after_stage,
+                        deferred_failures=policy_runner.deferred_failures,
+                    )
+                    stopping = True
+                elif message == "complete":
                     store.update(lifecycle=Lifecycle.COMPLETE)
                     store.event(
                         "episode_complete",

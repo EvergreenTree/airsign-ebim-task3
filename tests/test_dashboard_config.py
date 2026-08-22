@@ -33,7 +33,11 @@ def test_runtime_records_completed_stage_from_live_score_evidence() -> None:
         Path(__file__).parents[1] / "airsign_task3" / "isaac_native.py"
     ).read_text(encoding="utf-8")
     assert "highest_completed_stage=highest_completed_stage(breakdown)" in source
-    assert "policy_runner.stage_index" not in source
+    # The reported completed stage must come from scored evidence, never from
+    # the runner's internal cursor. The cursor may still be read for other
+    # purposes, such as the exploratory --stop-after-stage harness.
+    assert "highest_completed_stage=policy_runner.stage_index" not in source
+    assert "highest_completed_stage=policy_runner" not in source
     assert 'if message == "complete":' in source
     assert "stopping = True" in source
     assert '"episode_failed"' in source
