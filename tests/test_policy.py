@@ -148,12 +148,17 @@ def test_spoon_is_seated_on_reachable_robot_side_of_bowl_for_regrasp() -> None:
     assert lower.metadata["placement_object_xy"] is True
     assert lower.metadata["placement_object_xy_tolerance_m"] == 0.045
 
+    # The plate is cleared last, after the spoon that rests on it. At scene
+    # start the plate sits at z=0.747 and the spoon at z=0.759 over nearly the
+    # same x/y, so lifting the plate first would tip the spoon off it. It also
+    # keeps the spoon grasp in the conditions it was calibrated in, with the
+    # spoon still supported by the plate.
     plate_capable_labels = [
         primitive.label
         for primitive in build_table_setup_plan(include_plate=True)
     ]
-    assert plate_capable_labels.index("navigate to plate") < plate_capable_labels.index(
-        "navigate to spoon"
+    assert plate_capable_labels.index("navigate to spoon") < plate_capable_labels.index(
+        "navigate to plate"
     )
 
 
@@ -310,6 +315,11 @@ def test_each_exterior_tray_object_is_explicitly_preshaped_open() -> None:
 def test_each_supply_pickup_retracts_before_loaded_navigation() -> None:
     plan = build_table_setup_plan(include_plate=True)
     labels = [primitive.label for primitive in plan]
+    last_object = next(
+        primitive.label.removeprefix("navigate to ")
+        for primitive in reversed(plan)
+        if primitive.label.startswith("navigate to ")
+    )
     for object_name in ("cup", "bowl", "spoon", "plate"):
         assert labels.index(f"lift {object_name}") < labels.index(
             f"retract {object_name} from supply table"
@@ -544,6 +554,11 @@ def test_bean_recovery_reuses_internal_grasp_and_delivers_bowl_to_sink() -> None
 def test_each_assignment_stows_empty_arm_before_next_navigation() -> None:
     plan = build_table_setup_plan(include_plate=True)
     labels = [primitive.label for primitive in plan]
+    last_object = next(
+        primitive.label.removeprefix("navigate to ")
+        for primitive in reversed(plan)
+        if primitive.label.startswith("navigate to ")
+    )
     for object_name in ("cup", "bowl", "spoon", "plate"):
         verify = labels.index(f"verify {object_name} assignment")
         stow = labels.index(f"stow right arm after placing {object_name}")
@@ -551,7 +566,8 @@ def test_each_assignment_stows_empty_arm_before_next_navigation() -> None:
         primitive = plan[stow]
         assert primitive.arm is Arm.RIGHT
         assert primitive.orientation_hint == "transit_stow"
-        if object_name != "spoon":
+        # Only the final object has no navigation after it.
+        if object_name != last_object:
             next_navigation = next(
                 index
                 for index in range(stow + 1, len(plan))
@@ -593,7 +609,9 @@ def test_confirmed_placement_drop_defers_object_without_retries() -> None:
 
     assert ok
     assert message == "deferred TABLE_SETUP:lower spoon; continuing"
-    assert runner.current.label == "check bowl staged for feeding"
+    # The plate scope follows the spoon now, so a deferred spoon lands there
+    # rather than at the feeding checks.
+    assert runner.current.label == "navigate to plate"
     assert runner.retries == 0
     assert actuator.backoffs == [Arm.RIGHT]
     assert actuator.defer_scope_reason is None

@@ -88,7 +88,12 @@ def build_table_setup_plan(*, include_plate: bool = False) -> list[Primitive]:
         ("spoon", Arm.RIGHT, "head_seat"),
     ]
     if include_plate:
-        handling.insert(2, ("plate", Arm.RIGHT, "plate_seat"))
+        # The plate goes last because the spoon rests on it. At scene start the
+        # plate sits at z=0.747 and the spoon at z=0.759 over nearly the same
+        # x/y, while the cup and bowl stand beside it on the tray. Lifting the
+        # plate before the spoon would tip the spoon off it, so the plate is
+        # only cleared once nothing is left on top.
+        handling.append(("plate", Arm.RIGHT, "plate_seat"))
     for object_name, arm, destination in handling:
         contact_height = 0.025
         grasp_force_n = (
@@ -589,7 +594,11 @@ def build_cleanup_plan() -> list[Primitive]:
 
 def build_full_plan() -> dict[Stage, list[Primitive]]:
     return {
-        Stage.TABLE_SETUP: build_table_setup_plan(),
+        # Attempt all four objects. The plate is the fourth Stage 1 point and
+        # the only route to completing the stage at all, which is the first
+        # ranking metric; a plate that cannot be seated is deferred like any
+        # other object and costs the run nothing but time.
+        Stage.TABLE_SETUP: build_table_setup_plan(include_plate=True),
         Stage.FEEDING: build_feeding_plan(),
         Stage.BEAN_RECOVERY: build_bean_recovery_plan(),
         Stage.CLEANUP: build_cleanup_plan(),
