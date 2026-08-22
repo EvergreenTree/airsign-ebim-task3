@@ -216,6 +216,14 @@ def test_recovery_and_cleanup_pickups_use_dining_station_approach() -> None:
         for primitive in cleanup_navigations
     )
     assert all(
+        primitive.metadata["supply_reach_cap_m"] == 0.95
+        for primitive in cleanup_navigations
+    )
+    # Stage 1 must not inherit the wider cap; raising it globally cost Stage 1
+    # two objects a seed.
+    for primitive in build_table_setup_plan():
+        assert "supply_reach_cap_m" not in primitive.metadata
+    assert all(
         "dining_final_advance" not in primitive.metadata
         for primitive in cleanup_navigations
     )

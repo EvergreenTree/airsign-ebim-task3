@@ -58,13 +58,12 @@ BASE_CLEARANCE_EGRESS_MARGIN_M = 0.22
 # after a successful cup placement.
 BASE_CLEARANCE_EGRESS_ACCEPTANCE_M = 0.16
 BASE_STATION_STANDOFF_M = 0.42
-# Raised from 0.75: cleanup fetches objects left on the kitchen supply
-# table, and every goal candidate there sat at 0.820 m, so route planning
-# rejected all of them and the navigation failed outright -- 17 times
-# across seeds 0/1/2 on b86d37b5. Routes are ranked by smallest reach, so
-# admitting farther candidates only matters when nothing closer is
-# feasible; the station approach below then closes the gap.
-BASE_MAX_SUPPLY_MANIPULATION_REACH_M = 0.95
+# Stage 1 depends on this staying tight. Raising it globally to 0.95 dropped
+# Stage 1 from 2-3 objects to 1 on every seed, with `navigate to spoon`
+# exhausting all seven attempts: admitting distant candidates removed the
+# pressure that made a failed plan retry with wider clearance and find a
+# workable pose. Cleanup raises it per-primitive instead.
+BASE_MAX_SUPPLY_MANIPULATION_REACH_M = 0.75
 BASE_SUPPLY_STATION_ACCEPTANCE_M = 0.06
 DINING_STATION_STANDOFF_M = 0.60
 COUNTER_STATION_STANDOFF_M = 0.60
@@ -1116,6 +1115,7 @@ class IsaacPhysicalActuator(PhysicalActuator):
         dining_station: bool | None = False,
         dining_final_advance: bool = True,
         station_final_advance: bool = False,
+        supply_reach_cap_m: float | None = None,
         nearby_station_acceptance_m: float | None = None,
         manipulation_yaw_tolerance_rad: float | None = None,
     ) -> bool:
@@ -1230,15 +1230,20 @@ class IsaacPhysicalActuator(PhysicalActuator):
                     f"{BASE_MAX_DINING_MANIPULATION_REACH_M:.3f} m"
                 )
                 continue
+            supply_cap = (
+                BASE_MAX_SUPPLY_MANIPULATION_REACH_M
+                if supply_reach_cap_m is None
+                else float(supply_reach_cap_m)
+            )
             if (
                 not dining_station
                 and target_name in {"plate", "cup", "bowl", "spoon"}
-                and manipulation_reach > BASE_MAX_SUPPLY_MANIPULATION_REACH_M
+                and manipulation_reach > supply_cap
             ):
                 route_errors.append(
                     f"{candidate.tolist()}: manipulation reach "
                     f"{manipulation_reach:.3f} m exceeds "
-                    f"{BASE_MAX_SUPPLY_MANIPULATION_REACH_M:.3f} m"
+                    f"{supply_cap:.3f} m"
                 )
                 continue
             if any(obstacle.contains(tuple(candidate), clearance=clearance) for obstacle in planning_obstacles):
@@ -3845,6 +3850,11 @@ class IsaacPhysicalActuator(PhysicalActuator):
             ),
             station_final_advance=bool(
                 primitive.metadata.get("station_final_advance", False)
+            ),
+            supply_reach_cap_m=(
+                float(primitive.metadata["supply_reach_cap_m"])
+                if "supply_reach_cap_m" in primitive.metadata
+                else None
             ),
             nearby_station_acceptance_m=(
                 float(primitive.metadata["nearby_station_acceptance_m"])

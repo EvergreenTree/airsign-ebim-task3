@@ -728,7 +728,9 @@ def test_supply_navigation_preserves_clearance_and_physically_holds_base() -> No
     source_path = Path(__file__).parents[1] / "airsign_task3" / "isaac_actuator.py"
     source = source_path.read_text(encoding="utf-8")
     assert "BASE_STATION_STANDOFF_M = 0.42" in source
-    assert "BASE_MAX_SUPPLY_MANIPULATION_REACH_M = 0.95" in source
+    # Stage 1 depends on the tight default; only cleanup widens it.
+    assert "BASE_MAX_SUPPLY_MANIPULATION_REACH_M = 0.75" in source
+    assert "manipulation_reach > supply_cap" in source
     # The short normal approach is not specific to the dining area: a
     # cleanup pickup on the kitchen supply table needs it too.
     assert "if dining_station or station_final_advance:" in source
@@ -838,7 +840,10 @@ def test_supply_navigation_preserves_clearance_and_physically_holds_base() -> No
     assert '"base_portal_orientation_complete"' in source
     assert '"orienting base for portal transit: "' in source
     assert "manipulation_reach = float(np.linalg.norm(candidate - target))" in source
-    assert "manipulation_reach > BASE_MAX_SUPPLY_MANIPULATION_REACH_M" in source
+    # The cap is per-primitive now: the tight constant is the default and
+    # only cleanup overrides it, because Stage 1 depends on the default.
+    assert "manipulation_reach > supply_cap" in source
+    assert "if supply_reach_cap_m is None" in source
     assert "ranked_routes = sorted(routes, key=lambda item: (item[0], item[1]))" in source
     assert "selected_route_rank = min(attempt, len(ranked_routes) - 1)" in source
     plate_branch = 'if target_name == "plate" and not dining_station:'

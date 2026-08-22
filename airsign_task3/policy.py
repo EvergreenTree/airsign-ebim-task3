@@ -490,6 +490,11 @@ def build_cleanup_plan() -> list[Primitive]:
                               # normal approach a dining seat gets, or the base
                               # stops at a standoff it cannot manipulate from.
                               "station_final_advance": True,
+                              # Cleanup alone needs the wider cap: every
+                              # candidate for a kitchen-resident object sat at
+                              # 0.820 m. Stage 1 keeps the tight default, which
+                              # it depends on.
+                              "supply_reach_cap_m": 0.95,
                               # Cleanup starts from wherever the previous scope
                               # ended, usually already beside the table. Route
                               # planning from there found no viable candidate
