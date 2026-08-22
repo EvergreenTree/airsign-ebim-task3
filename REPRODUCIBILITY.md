@@ -38,10 +38,19 @@ Python untouched. Run-specific seed, head placement, resolved prim paths,
 scores, timings, safety events, and failure reason are saved in machine-readable
 artifacts.
 
-The minimum policy-submission gate is three consecutive clean-reset runs with
-different seeds that terminate autonomously, score above zero, and have no
-watchdog intervention or unexplained emergency stop. The target release gate is
-Stage 4 completion in at least two runs and at least three Stage 4 object points
-in every run. A perfect 16/16 is a stretch target, not a prerequisite for an
-honest runnable submission. Any reported mean includes all three frozen
-acceptance runs rather than only successful runs.
+Gates, and whether they were met. Any reported mean includes every acceptance
+run rather than only the successful ones.
+
+| Gate | Status |
+|---|---|
+| Three clean-reset runs on different seeds terminate autonomously | **met** |
+| Every run scores above zero | **not met** - seed 7 scored 0.00 |
+| No watchdog intervention or unexplained emergency stop | **met** |
+| At least three Stage 4 object points in every run | **not met** - Stage 4 averages 0.14 of 4 |
+| Stage 4 completed in at least two runs | **not met** - never completed |
+| 16/16 | **not met** - best single run 5.91 |
+
+The minimum submission gate is met: the policy runs autonomously to completion
+and scores above zero on most seeds. The release targets above were aspirations
+set before the campaign and are recorded here unmet rather than quietly
+dropped.

@@ -1,0 +1,14 @@
+AirSign EBiM Task 3 policy
+Copyright 2026 Team AirSign
+
+Licensed under the Apache License, Version 2.0.
+
+This repository vendors an unmodified subset of the EBiM Benchmark
+(https://github.com/EBiM-Benchmark/benchmark) under vendor/benchmark/, which
+is itself Apache-2.0 and carries its own LICENSE and NOTICE in that directory.
+Original benchmark work is Copyright 2026 The EBiM Organizing Committee.
+vendor/benchmark/PROVENANCE.md records the official source and SHA-256 of
+every vendored file. Nothing under vendor/ is authored by AirSign.
+
+The container builds on nvcr.io/nvidia/isaac-sim:5.1.0, which is subject to
+NVIDIA's own licence terms.
